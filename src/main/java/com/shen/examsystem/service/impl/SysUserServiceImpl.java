@@ -41,4 +41,21 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         }
         this.save(user);
     }
+
+    @Override
+    public void changePassword(Long userId, String oldPassword, String newPassword) {
+        SysUser user = this.getById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        // 验证旧密码
+        if (!user.getPassword().equals(oldPassword)) {
+            throw new RuntimeException("旧密码错误");
+        }
+
+        // 更新密码
+        user.setPassword(newPassword);
+        this.updateById(user);
+    }
 }

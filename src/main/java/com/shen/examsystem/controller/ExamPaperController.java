@@ -126,6 +126,25 @@ public class ExamPaperController {
     }
 
     /**
+     * 删除试卷
+     */
+    @DeleteMapping("/{id}")
+    public Result<Void> delete(@PathVariable Long id) {
+        examPaperService.deletePaper(id);
+        return Result.success("删除成功", null);
+    }
+
+    /**
+     * 更新试卷基本信息
+     */
+    @PutMapping("/{id}")
+    public Result<Void> update(@PathVariable Long id, @RequestBody ExamPaper paper) {
+        paper.setId(id);
+        examPaperService.updateById(paper);
+        return Result.success("更新成功", null);
+    }
+
+    /**
      * 学生获取可考试卷列表
      */
     @GetMapping("/list-active")

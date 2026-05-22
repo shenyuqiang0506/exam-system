@@ -4,6 +4,7 @@ import com.shen.examsystem.common.JwtUtils;
 import com.shen.examsystem.common.Result;
 import com.shen.examsystem.entity.SysUser;
 import com.shen.examsystem.service.SysUserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -47,6 +48,32 @@ public class UserController {
     public Result<Void> register(@RequestBody SysUser user) {
         sysUserService.register(user);
         return Result.success("注册成功", null);
+    }
+
+    /**
+     * 修改密码
+     */
+    @PostMapping("/change-password")
+    public Result<Void> changePassword(@RequestBody ChangePasswordDTO dto, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return Result.error(401, "未登录");
+        }
+        sysUserService.changePassword(userId, dto.getOldPassword(), dto.getNewPassword());
+        return Result.success("密码修改成功", null);
+    }
+
+    /**
+     * 修改密码 DTO
+     */
+    public static class ChangePasswordDTO {
+        private String oldPassword;
+        private String newPassword;
+
+        public String getOldPassword() { return oldPassword; }
+        public void setOldPassword(String oldPassword) { this.oldPassword = oldPassword; }
+        public String getNewPassword() { return newPassword; }
+        public void setNewPassword(String newPassword) { this.newPassword = newPassword; }
     }
 
     /**

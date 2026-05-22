@@ -54,6 +54,12 @@ public interface ExamPaperService extends IService<ExamPaper> {
     String getPaperStatus(ExamPaper paper);
 
     /**
+     * 删除试卷（同时删除关联的题目）
+     * @param paperId 试卷ID
+     */
+    void deletePaper(Long paperId);
+
+    /**
      * 获取剩余时间（秒）
      * @param paper 试卷
      * @return 剩余秒数

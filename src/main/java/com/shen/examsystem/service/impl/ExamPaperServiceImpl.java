@@ -57,6 +57,18 @@ public class ExamPaperServiceImpl extends ServiceImpl<ExamPaperMapper, ExamPaper
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deletePaper(Long paperId) {
+        // 1. 删除试卷题目的关联
+        LambdaQueryWrapper<PaperQuestion> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PaperQuestion::getPaperId, paperId);
+        paperQuestionMapper.delete(wrapper);
+
+        // 2. 删除试卷
+        this.removeById(paperId);
+    }
+
+    @Override
     public List<ExamPaper> listActivePapers() {
         LambdaQueryWrapper<ExamPaper> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ExamPaper::getIsArchived, 0);
