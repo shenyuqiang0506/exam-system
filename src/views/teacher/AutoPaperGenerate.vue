@@ -3,39 +3,41 @@
     <el-card shadow="hover">
       <template #header>
         <div class="card-header">
-          <el-icon><MagicStick /></el-icon>
+          <el-icon>
+            <MagicStick/>
+          </el-icon>
           <span>遗传算法智能组卷</span>
         </div>
       </template>
 
       <el-form
-        ref="formRef"
-        :model="ruleForm"
-        :rules="rules"
-        label-width="120px"
-        size="large"
+          ref="formRef"
+          :model="ruleForm"
+          :rules="rules"
+          label-width="120px"
+          size="large"
       >
         <!-- 试卷名称 -->
         <el-form-item label="试卷名称" prop="title">
           <el-input
-            v-model="ruleForm.title"
-            placeholder="请输入试卷名称"
-            clearable
+              v-model="ruleForm.title"
+              placeholder="请输入试卷名称"
+              clearable
           />
         </el-form-item>
 
         <!-- 科目名称 -->
         <el-form-item label="科目名称" prop="subjectName">
           <el-select
-            v-model="ruleForm.subjectName"
-            placeholder="请选择科目"
-            style="width: 100%"
+              v-model="ruleForm.subjectName"
+              placeholder="请选择科目"
+              style="width: 100%"
           >
             <el-option
-              v-for="subject in subjectList"
-              :key="subject"
-              :label="subject"
-              :value="subject"
+                v-for="subject in subjectList"
+                :key="subject"
+                :label="subject"
+                :value="subject"
             />
           </el-select>
         </el-form-item>
@@ -43,37 +45,37 @@
         <!-- 试卷总分 -->
         <el-form-item label="试卷总分" prop="totalScore">
           <el-input-number
-            v-model="ruleForm.totalScore"
-            :min="10"
-            :max="200"
-            :step="10"
-            style="width: 100%"
+              v-model="ruleForm.totalScore"
+              :min="10"
+              :max="200"
+              :step="10"
+              style="width: 100%"
           />
         </el-form-item>
 
         <!-- 考试时间 -->
         <el-form-item label="考试时间" prop="examTime">
           <el-date-picker
-            v-model="ruleForm.examTime"
-            type="datetimerange"
-            range-separator="至"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            style="width: 100%"
+              v-model="ruleForm.examTime"
+              type="datetimerange"
+              range-separator="至"
+              start-placeholder="开始时间"
+              end-placeholder="结束时间"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              style="width: 100%"
           />
         </el-form-item>
 
         <!-- 期望难度 -->
         <el-form-item label="期望难度">
           <el-slider
-            v-model="ruleForm.targetDifficulty"
-            :min="0.1"
-            :max="1.0"
-            :step="0.1"
-            :format-tooltip="val => val.toFixed(1)"
-            show-stops
-            style="width: 100%"
+              v-model="ruleForm.targetDifficulty"
+              :min="0.1"
+              :max="1.0"
+              :step="0.1"
+              :format-tooltip="val => val.toFixed(1)"
+              show-stops
+              style="width: 100%"
           />
         </el-form-item>
 
@@ -82,21 +84,21 @@
           <el-row :gutter="20" style="width: 100%">
             <el-col :span="12">
               <el-input-number
-                v-model="ruleForm.singleChoiceCount"
-                :min="0"
-                :max="50"
-                placeholder="数量"
-                style="width: 100%"
+                  v-model="ruleForm.singleChoiceCount"
+                  :min="0"
+                  :max="50"
+                  placeholder="数量"
+                  style="width: 100%"
               />
               <span class="unit-label">题数</span>
             </el-col>
             <el-col :span="12">
               <el-input-number
-                v-model="ruleForm.singleChoiceScore"
-                :min="1"
-                :max="10"
-                placeholder="单题分值"
-                style="width: 100%"
+                  v-model="ruleForm.singleChoiceScore"
+                  :min="1"
+                  :max="10"
+                  placeholder="单题分值"
+                  style="width: 100%"
               />
               <span class="unit-label">分/题</span>
             </el-col>
@@ -108,21 +110,21 @@
           <el-row :gutter="20" style="width: 100%">
             <el-col :span="12">
               <el-input-number
-                v-model="ruleForm.multiChoiceCount"
-                :min="0"
-                :max="50"
-                placeholder="数量"
-                style="width: 100%"
+                  v-model="ruleForm.multiChoiceCount"
+                  :min="0"
+                  :max="50"
+                  placeholder="数量"
+                  style="width: 100%"
               />
               <span class="unit-label">题数</span>
             </el-col>
             <el-col :span="12">
               <el-input-number
-                v-model="ruleForm.multiChoiceScore"
-                :min="1"
-                :max="10"
-                placeholder="单题分值"
-                style="width: 100%"
+                  v-model="ruleForm.multiChoiceScore"
+                  :min="1"
+                  :max="10"
+                  placeholder="单题分值"
+                  style="width: 100%"
               />
               <span class="unit-label">分/题</span>
             </el-col>
@@ -134,21 +136,21 @@
           <el-row :gutter="20" style="width: 100%">
             <el-col :span="12">
               <el-input-number
-                v-model="ruleForm.subjectiveCount"
-                :min="0"
-                :max="10"
-                placeholder="数量"
-                style="width: 100%"
+                  v-model="ruleForm.subjectiveCount"
+                  :min="0"
+                  :max="10"
+                  placeholder="数量"
+                  style="width: 100%"
               />
               <span class="unit-label">题数</span>
             </el-col>
             <el-col :span="12">
               <el-input-number
-                v-model="ruleForm.subjectiveScore"
-                :min="1"
-                :max="30"
-                placeholder="单题分值"
-                style="width: 100%"
+                  v-model="ruleForm.subjectiveScore"
+                  :min="1"
+                  :max="30"
+                  placeholder="单题分值"
+                  style="width: 100%"
               />
               <span class="unit-label">分/题</span>
             </el-col>
@@ -168,13 +170,15 @@
         <!-- 提交按钮 -->
         <el-form-item>
           <el-button
-            type="primary"
-            :loading="loading"
-            @click="handleSubmit"
-            size="large"
-            style="width: 100%"
+              type="primary"
+              :loading="loading"
+              @click="handleSubmit"
+              size="large"
+              style="width: 100%"
           >
-            <el-icon><MagicStick /></el-icon>
+            <el-icon>
+              <MagicStick/>
+            </el-icon>
             开始智能生成
           </el-button>
         </el-form-item>
@@ -184,9 +188,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { MagicStick } from '@element-plus/icons-vue'
+import {ref, reactive, computed, onMounted} from 'vue'
+import {ElMessage} from 'element-plus'
+import {MagicStick} from '@element-plus/icons-vue'
 import request from '@/utils/request'
 
 const formRef = ref(null)
@@ -208,15 +212,15 @@ const ruleForm = reactive({
 })
 
 const rules = reactive({
-  title: [{ required: true, message: '请输入试卷名称', trigger: 'blur' }],
-  subjectName: [{ required: true, message: '请选择科目', trigger: 'change' }],
-  totalScore: [{ required: true, message: '请设置试卷总分', trigger: 'blur' }]
+  title: [{required: true, message: '请输入试卷名称', trigger: 'blur'}],
+  subjectName: [{required: true, message: '请选择科目', trigger: 'change'}],
+  totalScore: [{required: true, message: '请设置试卷总分', trigger: 'blur'}]
 })
 
 const totalCalcScore = computed(() => {
   return ruleForm.singleChoiceCount * ruleForm.singleChoiceScore +
-         ruleForm.multiChoiceCount * ruleForm.multiChoiceScore +
-         ruleForm.subjectiveCount * ruleForm.subjectiveScore
+      ruleForm.multiChoiceCount * ruleForm.multiChoiceScore +
+      ruleForm.subjectiveCount * ruleForm.subjectiveScore
 })
 
 const handleSubmit = async () => {

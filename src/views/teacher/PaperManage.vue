@@ -3,11 +3,15 @@
     <!-- 操作按钮 -->
     <el-card shadow="hover" class="action-card">
       <el-button type="primary" @click="handleCreate">
-        <el-icon><Plus /></el-icon>
+        <el-icon>
+          <Plus/>
+        </el-icon>
         手动组卷
       </el-button>
       <el-button type="success" @click="$router.push('/teacher/auto-paper')">
-        <el-icon><MagicStick /></el-icon>
+        <el-icon>
+          <MagicStick/>
+        </el-icon>
         智能组卷
       </el-button>
     </el-card>
@@ -15,10 +19,10 @@
     <!-- 试卷列表 -->
     <el-card shadow="hover">
       <el-table :data="tableData" v-loading="loading" stripe>
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="title" label="试卷名称" />
-        <el-table-column prop="subjectName" label="科目" width="120" />
-        <el-table-column prop="totalScore" label="总分" width="80" />
+        <el-table-column prop="id" label="ID" width="80"/>
+        <el-table-column prop="title" label="试卷名称"/>
+        <el-table-column prop="subjectName" label="科目" width="120"/>
+        <el-table-column prop="totalScore" label="总分" width="80"/>
         <el-table-column prop="targetDifficulty" label="目标难度" width="100">
           <template #default="{ row }">
             {{ row.targetDifficulty?.toFixed(1) }}
@@ -31,13 +35,13 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180" />
+        <el-table-column prop="createTime" label="创建时间" width="180"/>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-popconfirm
-              v-if="row.isArchived === 0"
-              title="确定归档该试卷？"
-              @confirm="handleArchive(row.id)"
+                v-if="row.isArchived === 0"
+                title="确定归档该试卷？"
+                @confirm="handleArchive(row.id)"
             >
               <template #reference>
                 <el-button type="warning" link>归档</el-button>
@@ -55,26 +59,27 @@
     <el-dialog v-model="dialogVisible" title="手动组卷" width="800px">
       <el-form ref="formRef" :model="formData" :rules="rules" label-width="100px">
         <el-form-item label="试卷名称" prop="title">
-          <el-input v-model="formData.title" placeholder="请输入试卷名称" />
+          <el-input v-model="formData.title" placeholder="请输入试卷名称"/>
         </el-form-item>
         <el-form-item label="科目" prop="subjectName">
-          <el-select v-model="formData.subjectName" placeholder="请选择科目" @change="loadQuestions" style="width: 100%">
+          <el-select v-model="formData.subjectName" placeholder="请选择科目" @change="loadQuestions"
+                     style="width: 100%">
             <el-option
-              v-for="subject in subjectList"
-              :key="subject"
-              :label="subject"
-              :value="subject"
+                v-for="subject in subjectList"
+                :key="subject"
+                :label="subject"
+                :value="subject"
             />
           </el-select>
         </el-form-item>
         <el-form-item label="选择题目" prop="questionIds">
           <el-transfer
-            v-model="formData.questionIds"
-            :data="allQuestions"
-            :titles="['题库', '已选']"
-            :props="{ key: 'id', label: 'content' }"
-            filterable
-            filter-placeholder="搜索题目"
+              v-model="formData.questionIds"
+              :data="allQuestions"
+              :titles="['题库', '已选']"
+              :props="{ key: 'id', label: 'content' }"
+              filterable
+              filter-placeholder="搜索题目"
           />
         </el-form-item>
       </el-form>
@@ -87,9 +92,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Plus, MagicStick } from '@element-plus/icons-vue'
+import {ref, reactive, onMounted} from 'vue'
+import {ElMessage} from 'element-plus'
+import {Plus, MagicStick} from '@element-plus/icons-vue'
 import request from '@/utils/request'
 
 const loading = ref(false)
@@ -106,16 +111,16 @@ const formData = reactive({
 })
 
 const rules = {
-  title: [{ required: true, message: '请输入试卷名称', trigger: 'blur' }],
-  subjectName: [{ required: true, message: '请选择科目', trigger: 'change' }],
-  questionIds: [{ required: true, type: 'array', min: 1, message: '请至少选择一道题目', trigger: 'change' }]
+  title: [{required: true, message: '请输入试卷名称', trigger: 'blur'}],
+  subjectName: [{required: true, message: '请选择科目', trigger: 'change'}],
+  questionIds: [{required: true, type: 'array', min: 1, message: '请至少选择一道题目', trigger: 'change'}]
 }
 
 const loadData = async () => {
   loading.value = true
   try {
     // 教师查看所有试卷（包含已归档），使用分页接口
-    const res = await request.get('/api/paper/page', { params: { page: 1, size: 100 } })
+    const res = await request.get('/api/paper/page', {params: {page: 1, size: 100}})
     tableData.value = res.data.records
   } catch (err) {
     ElMessage.error('加载数据失败')
@@ -128,7 +133,7 @@ const loadQuestions = async () => {
   if (!formData.subjectName) return
   try {
     const res = await request.get('/api/question/page', {
-      params: { subjectName: formData.subjectName, page: 1, size: 100 }
+      params: {subjectName: formData.subjectName, page: 1, size: 100}
     })
     allQuestions.value = res.data.records.map(q => ({
       ...q,
@@ -140,7 +145,7 @@ const loadQuestions = async () => {
 }
 
 const handleCreate = () => {
-  Object.assign(formData, { title: '', subjectName: '', questionIds: [] })
+  Object.assign(formData, {title: '', subjectName: '', questionIds: []})
   allQuestions.value = []
   dialogVisible.value = true
 }
@@ -187,7 +192,7 @@ const handleSubmit = async () => {
     try {
       // 后端 ManualCreateDTO 期望 { paper: {...}, questionIds: [...] }
       await request.post('/api/paper/manual-create', {
-        paper: { title: formData.title, subjectName: formData.subjectName },
+        paper: {title: formData.title, subjectName: formData.subjectName},
         questionIds: formData.questionIds
       })
       ElMessage.success('创建成功')

@@ -11,22 +11,22 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="试卷名称" prop="title">
-              <el-input v-model="formData.title" placeholder="请输入试卷名称" />
+              <el-input v-model="formData.title" placeholder="请输入试卷名称"/>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="科目" prop="subjectName">
               <el-select
-                v-model="formData.subjectName"
-                placeholder="请选择科目"
-                style="width: 100%"
-                @change="loadQuestions"
+                  v-model="formData.subjectName"
+                  placeholder="请选择科目"
+                  style="width: 100%"
+                  @change="loadQuestions"
               >
                 <el-option
-                  v-for="subject in subjectList"
-                  :key="subject"
-                  :label="subject"
-                  :value="subject"
+                    v-for="subject in subjectList"
+                    :key="subject"
+                    :label="subject"
+                    :value="subject"
                 />
               </el-select>
             </el-form-item>
@@ -36,26 +36,26 @@
         <!-- 考试时间 -->
         <el-form-item label="考试时间" prop="examTime">
           <el-date-picker
-            v-model="formData.examTime"
-            type="datetimerange"
-            range-separator="至"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            style="width: 100%"
+              v-model="formData.examTime"
+              type="datetimerange"
+              range-separator="至"
+              start-placeholder="开始时间"
+              end-placeholder="结束时间"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              style="width: 100%"
           />
         </el-form-item>
 
         <!-- 题目选择区域 -->
         <el-form-item label="选择题目">
           <el-transfer
-            v-model="formData.questionIds"
-            :data="questionData"
-            :titles="['题库列表', '已选题目']"
-            :props="{ key: 'id', label: 'displayContent' }"
-            filterable
-            filter-placeholder="搜索题目"
-            @change="handleTransferChange"
+              v-model="formData.questionIds"
+              :data="questionData"
+              :titles="['题库列表', '已选题目']"
+              :props="{ key: 'id', label: 'displayContent' }"
+              filterable
+              filter-placeholder="搜索题目"
+              @change="handleTransferChange"
           >
             <template #default="{ option }">
               <div class="transfer-item">
@@ -81,7 +81,9 @@
 
         <el-form-item>
           <el-button type="primary" @click="handleSubmit" :loading="loading">
-            <el-icon><Check /></el-icon>
+            <el-icon>
+              <Check/>
+            </el-icon>
             创建试卷
           </el-button>
           <el-button @click="resetForm">重置</el-button>
@@ -92,11 +94,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Check } from '@element-plus/icons-vue'
+import {ref, reactive, computed, onMounted} from 'vue'
+import {ElMessage} from 'element-plus'
+import {Check} from '@element-plus/icons-vue'
 import request from '@/utils/request'
-import { useRouter } from 'vue-router'
+import {useRouter} from 'vue-router'
 
 const router = useRouter()
 const formRef = ref(null)
@@ -112,12 +114,12 @@ const formData = reactive({
 })
 
 const rules = {
-  title: [{ required: true, message: '请输入试卷名称', trigger: 'blur' }],
-  subjectName: [{ required: true, message: '请选择科目', trigger: 'change' }]
+  title: [{required: true, message: '请输入试卷名称', trigger: 'blur'}],
+  subjectName: [{required: true, message: '请选择科目', trigger: 'change'}]
 }
 
-const getTypeName = (type) => ({ 1: '单选', 2: '多选', 3: '判断', 4: '主观' }[type])
-const getTypeTag = (type) => ({ 1: '', 2: 'warning', 3: 'success', 4: 'danger' }[type])
+const getTypeName = (type) => ({1: '单选', 2: '多选', 3: '判断', 4: '主观'}[type])
+const getTypeTag = (type) => ({1: '', 2: 'warning', 3: 'success', 4: 'danger'}[type])
 
 // 统计已选题目
 const stats = computed(() => {
@@ -137,7 +139,7 @@ const loadQuestions = async () => {
   }
   try {
     const res = await request.get('/api/question/page', {
-      params: { subjectName: formData.subjectName, page: 1, size: 100 }
+      params: {subjectName: formData.subjectName, page: 1, size: 100}
     })
     questionData.value = res.data.records.map(q => {
       let title = q.content || ''
@@ -145,7 +147,8 @@ const loadQuestions = async () => {
         try {
           const parsed = JSON.parse(q.content)
           if (parsed && parsed.title) title = parsed.title
-        } catch (e) { /* 纯文本，不处理 */ }
+        } catch (e) { /* 纯文本，不处理 */
+        }
       }
       return {
         ...q,
@@ -212,8 +215,25 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.manual-paper { padding: 10px; max-width: 1000px; margin: 0 auto; }
-.card-header { font-weight: bold; font-size: 16px; }
-.transfer-item { display: flex; align-items: center; }
-.item-score { margin-left: auto; color: #f56c6c; font-size: 12px; }
+.manual-paper {
+  padding: 10px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.card-header {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.transfer-item {
+  display: flex;
+  align-items: center;
+}
+
+.item-score {
+  margin-left: auto;
+  color: #f56c6c;
+  font-size: 12px;
+}
 </style>

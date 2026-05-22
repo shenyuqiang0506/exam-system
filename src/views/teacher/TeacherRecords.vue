@@ -5,28 +5,30 @@
       <el-form inline>
         <el-form-item label="选择试卷">
           <el-select
-            v-model="selectedPaperId"
-            placeholder="请选择试卷"
-            style="width: 280px"
-            clearable
-            @change="loadRecords"
+              v-model="selectedPaperId"
+              placeholder="请选择试卷"
+              style="width: 280px"
+              clearable
+              @change="loadRecords"
           >
             <el-option
-              v-for="paper in paperList"
-              :key="paper.id"
-              :label="paper.title"
-              :value="paper.id"
+                v-for="paper in paperList"
+                :key="paper.id"
+                :label="paper.title"
+                :value="paper.id"
             />
           </el-select>
         </el-form-item>
         <el-form-item>
           <el-button
-            type="success"
-            :disabled="!selectedPaperId"
-            :loading="exportLoading"
-            @click="handleExport"
+              type="success"
+              :disabled="!selectedPaperId"
+              :loading="exportLoading"
+              @click="handleExport"
           >
-            <el-icon><Download /></el-icon>
+            <el-icon>
+              <Download/>
+            </el-icon>
             导出 Excel
           </el-button>
         </el-form-item>
@@ -43,14 +45,14 @@
       </template>
 
       <el-table
-        v-loading="tableLoading"
-        :data="recordList"
-        stripe
-        border
-        empty-text="请先选择试卷"
+          v-loading="tableLoading"
+          :data="recordList"
+          stripe
+          border
+          empty-text="请先选择试卷"
       >
-        <el-table-column type="index" label="#" width="55" align="center" />
-        <el-table-column prop="studentId" label="学生ID" width="180" align="center" />
+        <el-table-column type="index" label="#" width="55" align="center"/>
+        <el-table-column prop="studentId" label="学生ID" width="180" align="center"/>
         <el-table-column label="总得分" align="center">
           <template #default="{ row }">
             <el-tag :type="getScoreTag(row.totalScore)" size="large">
@@ -58,8 +60,8 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="objectiveScore" label="客观题得分" align="center" />
-        <el-table-column prop="subjectiveScore" label="主观题得分" align="center" />
+        <el-table-column prop="objectiveScore" label="客观题得分" align="center"/>
+        <el-table-column prop="subjectiveScore" label="主观题得分" align="center"/>
         <el-table-column label="状态" align="center" width="100">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'warning'">
@@ -67,16 +69,16 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="考试时间" align="center" width="180" />
+        <el-table-column prop="createTime" label="考试时间" align="center" width="180"/>
       </el-table>
     </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Download } from '@element-plus/icons-vue'
+import {ref, onMounted} from 'vue'
+import {ElMessage} from 'element-plus'
+import {Download} from '@element-plus/icons-vue'
 import request from '@/utils/request'
 
 const selectedPaperId = ref(null)
@@ -88,7 +90,7 @@ const exportLoading = ref(false)
 // 加载所有试卷供选择
 const loadPapers = async () => {
   try {
-    const res = await request.get('/api/paper/page', { params: { page: 1, size: 100 } })
+    const res = await request.get('/api/paper/page', {params: {page: 1, size: 100}})
     paperList.value = res.data.records || []
   } catch {
     ElMessage.error('加载试卷列表失败')

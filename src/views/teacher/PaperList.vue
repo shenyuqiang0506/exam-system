@@ -1,113 +1,29 @@
-<template>
-  <div class="paper-list">
-    <!-- 操作栏 -->
-    <el-card shadow="hover" class="action-card">
-      <el-row :gutter="10">
-        <el-col :span="6">
-          <el-select v-model="searchSubject" placeholder="按科目筛选" clearable style="width: 100%">
-            <el-option label="高等数学" value="高等数学" />
-            <el-option label="数据结构" value="数据结构" />
-            <el-option label="计算机网络" value="计算机网络" />
-          </el-select>
-        </el-col>
-        <el-col :span="18">
-          <el-button type="primary" @click="$router.push('/teacher/manual-paper')">
-            <el-icon><Plus /></el-icon>
-            手动组卷
-          </el-button>
-          <el-button type="success" @click="$router.push('/teacher/auto-paper')">
-            <el-icon><MagicStick /></el-icon>
-            智能组卷
-          </el-button>
-        </el-col>
-      </el-row>
-    </el-card>
-
-    <!-- 试卷列表 -->
-    <el-card shadow="hover">
-      <el-table :data="filteredPapers" v-loading="loading" stripe border>
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="title" label="试卷名称" min-width="180" />
-        <el-table-column prop="subjectName" label="科目" width="100" />
-        <el-table-column prop="totalScore" label="总分" width="70" />
-        <el-table-column label="开始时间" width="160">
-          <template #default="{ row }">
-            {{ formatTime(row.startTime) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="结束时间" width="160">
-          <template #default="{ row }">
-            {{ formatTime(row.endTime) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="考试状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getStatusType(row)" size="small">
-              {{ getStatusText(row) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="isArchived" label="归档状态" width="90">
-          <template #default="{ row }">
-            <el-tag :type="row.isArchived === 0 ? 'success' : 'info'" size="small">
-              {{ row.isArchived === 0 ? '正常' : '已归档' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
-          <template #default="{ row }">
-            <el-button type="primary" link @click="viewDetail(row)">详情</el-button>
-            <el-popconfirm
-              v-if="row.isArchived === 0"
-              title="确定归档该试卷？"
-              @confirm="handleArchive(row.id)"
-            >
-              <template #reference>
-                <el-button type="warning" link>归档</el-button>
-              </template>
-            </el-popconfirm>
-            <el-button type="success" link @click="exportScore(row.id)">
-              <el-icon><Download /></el-icon>
-              成绩
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
-
-    <!-- 详情对话框 -->
-    <el-dialog v-model="detailVisible" title="试卷详情" width="600px">
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="试卷名称">{{ currentPaper.title }}</el-descriptions-item>
-        <el-descriptions-item label="科目">{{ currentPaper.subjectName }}</el-descriptions-item>
-        <el-descriptions-item label="总分">{{ currentPaper.totalScore }}</el-descriptions-item>
-        <el-descriptions-item label="状态">
-          <el-tag :type="currentPaper.isArchived === 0 ? 'success' : 'info'">
-            {{ currentPaper.isArchived === 0 ? '正常' : '已归档' }}
-          </el-tag>
-        </el-descriptions-item>
-      </el-descriptions>
-      <el-divider />
-      <h4>包含题目 ({{ currentPaper.questionIds?.length || 0 }} 道)</h4>
-      <el-table :data="currentPaper.questionIds" stripe size="small" style="margin-top: 10px">
-        <el-table-column type="index" label="序号" width="60" />
-        <el-table-column prop="questionId" label="题目ID" />
-      </el-table>
-    </el-dialog>
-  </div>
-</template>
-
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Plus, MagicStick, Download } from '@element-plus/icons-vue'
+import {ref, reactive, computed, onMounted} from 'vue'
+import {ElMessage} from 'element-plus'
+import {Plus, MagicStick, Download} from '@element-plus/icons-vue'
 import request from '@/utils/request'
 
 const loading = ref(false)
+const saving = ref(false)
 const searchSubject = ref('')
 const paperList = ref([])
 const detailVisible = ref(false)
+const editVisible = ref(false)
 const currentPaper = ref({})
+const editFormRef = ref(null)
+
+const editForm = reactive({
+  id: null,
+  title: '',
+  subjectName: '',
+  totalScore: 100,
+  examTime: []
+})
+
+const editRules = {
+  title: [{required: true, message: '请输入试卷名称', trigger: 'blur'}]
+}
 
 const filteredPapers = computed(() => {
   if (!searchSubject.value) return paperList.value
@@ -144,10 +60,13 @@ const getStatusType = (paper) => {
 const loadPapers = async () => {
   loading.value = true
   try {
-    const res = await request.get('/api/paper/page', { params: { page: 1, size: 100 } })
+    const res = await request.get('/api/paper/page', {params: {page: 1, size: 100}})
     paperList.value = res.data.records
-  } catch { ElMessage.error('加载失败') }
-  finally { loading.value = false }
+  } catch {
+    ElMessage.error('加载失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 const handleArchive = async (id) => {
@@ -155,7 +74,9 @@ const handleArchive = async (id) => {
     await request.put(`/api/paper/archive/${id}`)
     ElMessage.success('归档成功')
     loadPapers()
-  } catch { ElMessage.error('归档失败') }
+  } catch {
+    ElMessage.error('归档失败')
+  }
 }
 
 const exportScore = (paperId) => {
@@ -165,15 +86,57 @@ const exportScore = (paperId) => {
 const viewDetail = async (row) => {
   try {
     const res = await request.get(`/api/paper/detail/${row.id}`)
-    currentPaper.value = { ...row, questionIds: res.data.questionIds?.map(id => ({ questionId: id })) || [] }
+    currentPaper.value = {...row, questionIds: res.data.questionIds?.map(id => ({questionId: id})) || []}
     detailVisible.value = true
-  } catch { ElMessage.error('获取详情失败') }
+  } catch {
+    ElMessage.error('获取详情失败')
+  }
+}
+
+// 编辑试卷
+const handleEdit = (row) => {
+  editForm.id = row.id
+  editForm.title = row.title
+  editForm.subjectName = row.subjectName
+  editForm.totalScore = row.totalScore
+  editForm.examTime = row.startTime && row.endTime ? [row.startTime, row.endTime] : []
+  editVisible.value = true
+}
+
+// 保存编辑
+const handleSave = async () => {
+  if (!editFormRef.value) return
+  await editFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    saving.value = true
+    try {
+      await request.put(`/api/paper/${editForm.id}`, {
+        title: editForm.title,
+        totalScore: editForm.totalScore,
+        startTime: editForm.examTime?.[0] || null,
+        endTime: editForm.examTime?.[1] || null
+      })
+      ElMessage.success('保存成功')
+      editVisible.value = false
+      loadPapers()
+    } catch {
+      ElMessage.error('保存失败')
+    } finally {
+      saving.value = false
+    }
+  })
+}
+
+// 删除试卷
+const handleDelete = async (id) => {
+  try {
+    await request.delete(`/api/paper/${id}`)
+    ElMessage.success('删除成功')
+    loadPapers()
+  } catch {
+    ElMessage.error('删除失败')
+  }
 }
 
 onMounted(loadPapers)
 </script>
-
-<style scoped>
-.paper-list { padding: 10px; }
-.action-card { margin-bottom: 20px; }
-</style>

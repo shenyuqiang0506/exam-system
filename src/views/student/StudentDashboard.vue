@@ -10,52 +10,73 @@
             </div>
           </template>
           <div class="paper-info">
-            <p><el-icon><Timer /></el-icon> 考试时长：120 分钟</p>
-            <p><el-icon><Trophy /></el-icon> 总分：{{ paper.totalScore }} 分</p>
-            <p><el-icon><Calendar /></el-icon> 创建时间：{{ paper.createTime }}</p>
+            <p>
+              <el-icon>
+                <Timer/>
+              </el-icon>
+              考试时长：120 分钟
+            </p>
+            <p>
+              <el-icon>
+                <Trophy/>
+              </el-icon>
+              总分：{{ paper.totalScore }} 分
+            </p>
+            <p>
+              <el-icon>
+                <Calendar/>
+              </el-icon>
+              创建时间：{{ paper.createTime }}
+            </p>
           </div>
 
           <!-- 根据考试状态显示不同按钮 -->
           <el-button
-            v-if="paper.completed"
-            type="info"
-            style="width: 100%"
-            disabled
+              v-if="paper.completed"
+              type="info"
+              style="width: 100%"
+              disabled
           >
-            <el-icon><CircleCheck /></el-icon>
+            <el-icon>
+              <CircleCheck/>
+            </el-icon>
             已完成考试
           </el-button>
           <el-button
-            v-else-if="paper.ongoing"
-            type="warning"
-            style="width: 100%"
-            @click="continueExam(paper)"
+              v-else-if="paper.ongoing"
+              type="warning"
+              style="width: 100%"
+              @click="continueExam(paper)"
           >
-            <el-icon><RefreshRight /></el-icon>
+            <el-icon>
+              <RefreshRight/>
+            </el-icon>
             继续考试
           </el-button>
           <el-button
-            v-else
-            type="primary"
-            style="width: 100%"
-            @click="startExam(paper)"
+              v-else
+              type="primary"
+              style="width: 100%"
+              @click="startExam(paper)"
           >
-            <el-icon><CaretRight /></el-icon>
+            <el-icon>
+              <CaretRight/>
+            </el-icon>
             开始考试
           </el-button>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-empty v-if="paperList.length === 0 && !loading" description="暂无可考试卷" />
+    <el-empty v-if="paperList.length === 0 && !loading" description="暂无可考试卷"/>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Timer, Trophy, Calendar, CaretRight, CircleCheck, RefreshRight } from '@element-plus/icons-vue'
+import {ref, onMounted} from 'vue'
+import {useRouter} from 'vue-router'
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {Timer, Trophy, Calendar, CaretRight, CircleCheck, RefreshRight} from '@element-plus/icons-vue'
 import request from '@/utils/request'
 
 const router = useRouter()
@@ -102,9 +123,9 @@ const loadPapers = async () => {
 
 const startExam = async (paper) => {
   await ElMessageBox.confirm(
-    `确定开始【${paper.title}】考试？开始后不可暂停。`,
-    '开始考试',
-    { confirmButtonText: '开始', cancelButtonText: '取消', type: 'warning' }
+      `确定开始【${paper.title}】考试？开始后不可暂停。`,
+      '开始考试',
+      {confirmButtonText: '开始', cancelButtonText: '取消', type: 'warning'}
   )
   router.push(`/student/exam/${paper.id}`)
 }
@@ -117,10 +138,34 @@ onMounted(loadPapers)
 </script>
 
 <style scoped>
-.student-dashboard { padding: 10px; }
-.paper-card { margin-bottom: 20px; }
-.card-header { display: flex; justify-content: space-between; align-items: center; }
-.paper-title { font-weight: bold; font-size: 16px; }
-.paper-info { margin-bottom: 15px; }
-.paper-info p { margin: 8px 0; color: #606266; display: flex; align-items: center; gap: 6px; }
+.student-dashboard {
+  padding: 10px;
+}
+
+.paper-card {
+  margin-bottom: 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.paper-title {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.paper-info {
+  margin-bottom: 15px;
+}
+
+.paper-info p {
+  margin: 8px 0;
+  color: #606266;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 </style>

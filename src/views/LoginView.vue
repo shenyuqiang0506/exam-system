@@ -3,45 +3,47 @@
     <el-card class="login-box" shadow="always">
       <template #header>
         <div class="login-header">
-          <el-icon :size="32" color="#409eff"><School /></el-icon>
+          <el-icon :size="32" color="#409eff">
+            <School/>
+          </el-icon>
           <h2>{{ isLogin ? '在线考试系统' : '学生注册' }}</h2>
         </div>
       </template>
 
       <!-- 登录表单 -->
       <el-form
-        v-if="isLogin"
-        ref="loginFormRef"
-        :model="loginForm"
-        :rules="loginRules"
-        label-width="0"
-        size="large"
+          v-if="isLogin"
+          ref="loginFormRef"
+          :model="loginForm"
+          :rules="loginRules"
+          label-width="0"
+          size="large"
       >
         <el-form-item prop="username">
           <el-input
-            v-model="loginForm.username"
-            placeholder="请输入账号"
-            :prefix-icon="User"
+              v-model="loginForm.username"
+              placeholder="请输入账号"
+              :prefix-icon="User"
           />
         </el-form-item>
 
         <el-form-item prop="password">
           <el-input
-            v-model="loginForm.password"
-            type="password"
-            placeholder="请输入密码"
-            show-password
-            :prefix-icon="Lock"
-            @keyup.enter="handleLogin"
+              v-model="loginForm.password"
+              type="password"
+              placeholder="请输入密码"
+              show-password
+              :prefix-icon="Lock"
+              @keyup.enter="handleLogin"
           />
         </el-form-item>
 
         <el-form-item>
           <el-button
-            type="primary"
-            :loading="loading"
-            style="width: 100%"
-            @click="handleLogin"
+              type="primary"
+              :loading="loading"
+              style="width: 100%"
+              @click="handleLogin"
           >
             登 录
           </el-button>
@@ -56,48 +58,48 @@
 
       <!-- 注册表单 -->
       <el-form
-        v-else
-        ref="registerFormRef"
-        :model="registerForm"
-        :rules="registerRules"
-        label-width="0"
-        size="large"
+          v-else
+          ref="registerFormRef"
+          :model="registerForm"
+          :rules="registerRules"
+          label-width="0"
+          size="large"
       >
         <el-form-item prop="username">
           <el-input
-            v-model="registerForm.username"
-            placeholder="请输入账号"
-            :prefix-icon="User"
+              v-model="registerForm.username"
+              placeholder="请输入账号"
+              :prefix-icon="User"
           />
         </el-form-item>
 
         <el-form-item prop="password">
           <el-input
-            v-model="registerForm.password"
-            type="password"
-            placeholder="请输入密码"
-            show-password
-            :prefix-icon="Lock"
+              v-model="registerForm.password"
+              type="password"
+              placeholder="请输入密码"
+              show-password
+              :prefix-icon="Lock"
           />
         </el-form-item>
 
         <el-form-item prop="confirmPassword">
           <el-input
-            v-model="registerForm.confirmPassword"
-            type="password"
-            placeholder="请确认密码"
-            show-password
-            :prefix-icon="Lock"
-            @keyup.enter="handleRegister"
+              v-model="registerForm.confirmPassword"
+              type="password"
+              placeholder="请确认密码"
+              show-password
+              :prefix-icon="Lock"
+              @keyup.enter="handleRegister"
           />
         </el-form-item>
 
         <el-form-item>
           <el-button
-            type="primary"
-            :loading="loading"
-            style="width: 100%"
-            @click="handleRegister"
+              type="primary"
+              :loading="loading"
+              style="width: 100%"
+              @click="handleRegister"
           >
             注 册
           </el-button>
@@ -114,12 +116,12 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { User, Lock, School } from '@element-plus/icons-vue'
+import {ref, reactive} from 'vue'
+import {useRouter} from 'vue-router'
+import {ElMessage} from 'element-plus'
+import {User, Lock, School} from '@element-plus/icons-vue'
 import request from '@/utils/request'
-import { useUserStore } from '@/stores/user'
+import {useUserStore} from '@/stores/user'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -135,8 +137,8 @@ const loginForm = reactive({
 })
 
 const loginRules = reactive({
-  username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+  username: [{required: true, message: '请输入账号', trigger: 'blur'}],
+  password: [{required: true, message: '请输入密码', trigger: 'blur'}]
 })
 
 // 注册表单
@@ -156,11 +158,11 @@ const validateConfirmPassword = (rule, value, callback) => {
 }
 
 const registerRules = reactive({
-  username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  username: [{required: true, message: '请输入账号', trigger: 'blur'}],
+  password: [{required: true, message: '请输入密码', trigger: 'blur'}],
   confirmPassword: [
-    { required: true, message: '请确认密码', trigger: 'blur' },
-    { validator: validateConfirmPassword, trigger: 'blur' }
+    {required: true, message: '请确认密码', trigger: 'blur'},
+    {validator: validateConfirmPassword, trigger: 'blur'}
   ]
 })
 
@@ -177,7 +179,7 @@ const handleLogin = async () => {
     loading.value = true
     try {
       const res = await request.post('/api/user/login', loginForm)
-      const { token, user } = res.data
+      const {token, user} = res.data
       userStore.setToken(token)
       userStore.setUserInfo(user)
       ElMessage.success('登录成功')

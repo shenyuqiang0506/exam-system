@@ -7,7 +7,9 @@
           <el-card shadow="hover" class="stat-card">
             <el-statistic title="活跃题目集" :value="activeCount">
               <template #icon>
-                <el-icon style="color: #67c23a"><VideoPlay /></el-icon>
+                <el-icon style="color: #67c23a">
+                  <VideoPlay/>
+                </el-icon>
               </template>
             </el-statistic>
           </el-card>
@@ -16,7 +18,9 @@
           <el-card shadow="hover" class="stat-card">
             <el-statistic title="待完成" :value="pendingCount">
               <template #icon>
-                <el-icon style="color: #e6a23c"><Clock /></el-icon>
+                <el-icon style="color: #e6a23c">
+                  <Clock/>
+                </el-icon>
               </template>
             </el-statistic>
           </el-card>
@@ -25,7 +29,9 @@
           <el-card shadow="hover" class="stat-card">
             <el-statistic title="已完成" :value="completedCount">
               <template #icon>
-                <el-icon style="color: #409eff"><CircleCheck /></el-icon>
+                <el-icon style="color: #409eff">
+                  <CircleCheck/>
+                </el-icon>
               </template>
             </el-statistic>
           </el-card>
@@ -38,32 +44,32 @@
       <el-tab-pane name="active">
         <template #label>
           <span class="tab-label">
-            <el-icon><VideoPlay /></el-icon>
+            <el-icon><VideoPlay/></el-icon>
             活跃题目集
-            <el-badge :value="activeCount" :max="99" class="badge" />
+            <el-badge :value="activeCount" :max="99" class="badge"/>
           </span>
         </template>
-        <ExamList :papers="activePapers" type="active" @refresh="loadActivePapers" />
+        <ExamList :papers="activePapers" type="active" @refresh="loadActivePapers"/>
       </el-tab-pane>
 
       <el-tab-pane name="all">
         <template #label>
           <span class="tab-label">
-            <el-icon><List /></el-icon>
+            <el-icon><List/></el-icon>
             所有题目集
           </span>
         </template>
-        <ExamList :papers="allPapers" type="all" @refresh="loadAllPapers" />
+        <ExamList :papers="allPapers" type="all" @refresh="loadAllPapers"/>
         <!-- 分页组件 -->
         <div class="pagination-wrapper">
           <el-pagination
-            v-model:current-page="pagination.page"
-            v-model:page-size="pagination.size"
-            :total="pagination.total"
-            :page-sizes="[5, 10, 20, 50]"
-            layout="total, sizes, prev, pager, next, jumper"
-            @size-change="loadAllPapers"
-            @current-change="loadAllPapers"
+              v-model:current-page="pagination.page"
+              v-model:page-size="pagination.size"
+              :total="pagination.total"
+              :page-sizes="[5, 10, 20, 50]"
+              layout="total, sizes, prev, pager, next, jumper"
+              @size-change="loadAllPapers"
+              @current-change="loadAllPapers"
           />
         </div>
       </el-tab-pane>
@@ -72,9 +78,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { VideoPlay, List, CircleCheck, Clock } from '@element-plus/icons-vue'
+import {ref, reactive, computed, onMounted} from 'vue'
+import {ElMessage} from 'element-plus'
+import {VideoPlay, List, CircleCheck, Clock} from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import ExamList from './ExamList.vue'
 

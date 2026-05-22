@@ -3,38 +3,52 @@
     <!-- 侧边栏 -->
     <el-aside width="220px" class="aside">
       <div class="logo">
-        <el-icon :size="24" color="#fff"><School /></el-icon>
+        <el-icon :size="24" color="#fff">
+          <School/>
+        </el-icon>
         <span>考试系统</span>
       </div>
       <el-menu
-        :default-active="activeMenu"
-        background-color="#304156"
-        text-color="#bfcbd9"
-        active-text-color="#409eff"
-        router
+          :default-active="activeMenu"
+          background-color="#304156"
+          text-color="#bfcbd9"
+          active-text-color="#409eff"
+          router
       >
         <el-menu-item index="/teacher/dashboard">
-          <el-icon><Odometer /></el-icon>
+          <el-icon>
+            <Odometer/>
+          </el-icon>
           <span>首页</span>
         </el-menu-item>
         <el-menu-item index="/teacher/questions">
-          <el-icon><Document /></el-icon>
+          <el-icon>
+            <Document/>
+          </el-icon>
           <span>题库管理</span>
         </el-menu-item>
         <el-menu-item index="/teacher/papers">
-          <el-icon><Files /></el-icon>
+          <el-icon>
+            <Files/>
+          </el-icon>
           <span>试卷管理</span>
         </el-menu-item>
         <el-menu-item index="/teacher/manual-paper">
-          <el-icon><EditPen /></el-icon>
+          <el-icon>
+            <EditPen/>
+          </el-icon>
           <span>手动组卷</span>
         </el-menu-item>
         <el-menu-item index="/teacher/auto-paper">
-          <el-icon><MagicStick /></el-icon>
+          <el-icon>
+            <MagicStick/>
+          </el-icon>
           <span>智能组卷</span>
         </el-menu-item>
         <el-menu-item index="/teacher/records">
-          <el-icon><DataAnalysis /></el-icon>
+          <el-icon>
+            <DataAnalysis/>
+          </el-icon>
           <span>成绩管理</span>
         </el-menu-item>
       </el-menu>
@@ -53,13 +67,14 @@
         <div class="header-right">
           <el-dropdown @command="handleCommand">
             <span class="user-info">
-              <el-avatar :size="32" :icon="UserFilled" />
+              <el-avatar :size="32" :icon="UserFilled"/>
               <span class="username">{{ userStore.userInfo.username || '教师' }}</span>
-              <el-icon><ArrowDown /></el-icon>
+              <el-icon><ArrowDown/></el-icon>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+                <el-dropdown-item command="changePassword">修改密码</el-dropdown-item>
+                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -68,25 +83,30 @@
 
       <!-- 内容区域 -->
       <el-main class="main">
-        <router-view />
+        <router-view/>
       </el-main>
     </el-container>
   </el-container>
+
+  <!-- 修改密码弹窗 -->
+  <ChangePassword v-model="showChangePassword"/>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
+import {ref, computed} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
+import {ElMessageBox} from 'element-plus'
 import {
   School, Odometer, Document, Files, MagicStick,
   DataAnalysis, UserFilled, ArrowDown, EditPen
 } from '@element-plus/icons-vue'
-import { useUserStore } from '@/stores/user'
+import {useUserStore} from '@/stores/user'
+import ChangePassword from '@/components/ChangePassword.vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const showChangePassword = ref(false)
 
 const activeMenu = computed(() => route.path)
 
@@ -111,6 +131,8 @@ const handleCommand = async (command) => {
     })
     userStore.clearUser()
     router.push('/login')
+  } else if (command === 'changePassword') {
+    showChangePassword.value = true
   }
 }
 </script>

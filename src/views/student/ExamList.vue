@@ -10,12 +10,14 @@
       <div class="exam-card-body">
         <h3 class="exam-title">{{ paper.title }}</h3>
         <div class="exam-meta">
-          <span><el-icon><Collection /></el-icon> {{ paper.subjectName }}</span>
-          <span><el-icon><Document /></el-icon> {{ paper.questionCount }} 题</span>
-          <span><el-icon><Trophy /></el-icon> {{ paper.totalScore }} 分</span>
+          <span><el-icon><Collection/></el-icon> {{ paper.subjectName }}</span>
+          <span><el-icon><Document/></el-icon> {{ paper.questionCount }} 题</span>
+          <span><el-icon><Trophy/></el-icon> {{ paper.totalScore }} 分</span>
         </div>
         <div class="exam-time" v-if="paper.startTime">
-          <el-icon><Clock /></el-icon>
+          <el-icon>
+            <Clock/>
+          </el-icon>
           {{ formatTime(paper.startTime) }} ~ {{ formatTime(paper.endTime) }}
         </div>
         <div class="exam-status">
@@ -38,9 +40,9 @@
         <!-- 进度 -->
         <div class="exam-progress">
           <el-progress
-            :percentage="getProgress(paper)"
-            :status="getProgressStatus(paper)"
-            :stroke-width="8"
+              :percentage="getProgress(paper)"
+              :status="getProgressStatus(paper)"
+              :stroke-width="8"
           />
           <span class="progress-text">{{ paper.answeredCount }}/{{ paper.questionCount }}</span>
         </div>
@@ -53,25 +55,25 @@
 
         <!-- 操作按钮 -->
         <el-button
-          :type="getButtonType(paper)"
-          :disabled="isButtonDisabled(paper)"
-          @click="handleAction(paper)"
-          size="large"
+            :type="getButtonType(paper)"
+            :disabled="isButtonDisabled(paper)"
+            @click="handleAction(paper)"
+            size="large"
         >
           {{ getButtonText(paper) }}
         </el-button>
       </div>
     </div>
 
-    <el-empty v-if="papers.length === 0" :description="emptyText" />
+    <el-empty v-if="papers.length === 0" :description="emptyText"/>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Collection, Document, Trophy, Clock } from '@element-plus/icons-vue'
+import {ref, computed, onMounted, onUnmounted, watch} from 'vue'
+import {useRouter} from 'vue-router'
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {Collection, Document, Trophy, Clock} from '@element-plus/icons-vue'
 
 const props = defineProps({
   papers: {
@@ -112,7 +114,7 @@ const initCountdowns = () => {
 // 监听 papers 变化
 watch(() => props.papers, () => {
   initCountdowns()
-}, { immediate: true })
+}, {immediate: true})
 
 // 启动定时器
 onMounted(() => {
@@ -223,9 +225,9 @@ const handleAction = async (paper) => {
       router.push(`/student/exam/${paper.id}`)
     } else {
       await ElMessageBox.confirm(
-        `确定开始【${paper.title}】考试？`,
-        '开始考试',
-        { confirmButtonText: '开始', cancelButtonText: '取消', type: 'warning' }
+          `确定开始【${paper.title}】考试？`,
+          '开始考试',
+          {confirmButtonText: '开始', cancelButtonText: '取消', type: 'warning'}
       )
       router.push(`/student/exam/${paper.id}`)
     }

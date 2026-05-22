@@ -43,7 +43,8 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+                <el-dropdown-item command="changePassword">修改密码</el-dropdown-item>
+                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -56,20 +57,25 @@
       </el-main>
     </el-container>
   </el-container>
+
+  <!-- 修改密码弹窗 -->
+  <ChangePassword v-model="showChangePassword" />
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import {
   School, Collection, TrendCharts, UserFilled, ArrowDown
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import ChangePassword from '@/components/ChangePassword.vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const showChangePassword = ref(false)
 
 const activeMenu = computed(() => route.path)
 
@@ -90,6 +96,8 @@ const handleCommand = async (command) => {
     })
     userStore.clearUser()
     router.push('/login')
+  } else if (command === 'changePassword') {
+    showChangePassword.value = true
   }
 }
 </script>
