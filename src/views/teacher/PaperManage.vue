@@ -36,8 +36,11 @@
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="180"/>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
+            <el-button type="primary" link @click="handlePreview(row)">
+              预览
+            </el-button>
             <el-popconfirm
                 v-if="row.isArchived === 0"
                 title="确定归档该试卷？"
@@ -93,10 +96,12 @@
 
 <script setup>
 import {ref, reactive, onMounted} from 'vue'
+import {useRouter} from 'vue-router'
 import {ElMessage} from 'element-plus'
 import {Plus, MagicStick} from '@element-plus/icons-vue'
 import request from '@/utils/request'
 
+const router = useRouter()
 const loading = ref(false)
 const dialogVisible = ref(false)
 const formRef = ref(null)
@@ -148,6 +153,11 @@ const handleCreate = () => {
   Object.assign(formData, {title: '', subjectName: '', questionIds: []})
   allQuestions.value = []
   dialogVisible.value = true
+}
+
+const handlePreview = (row) => {
+  // 跳转到新页面预览编辑
+  router.push(`/teacher/paper-preview/${row.id}`)
 }
 
 const handleArchive = async (id) => {

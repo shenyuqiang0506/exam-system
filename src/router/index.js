@@ -62,6 +62,24 @@ const router = createRouter({
                     name: 'TeacherRecords',
                     component: () => import('@/views/teacher/TeacherRecords.vue'),
                     meta: {title: '成绩管理'}
+                },
+                {
+                    path: 'users',
+                    name: 'UserManage',
+                    component: () => import('@/views/teacher/UserManage.vue'),
+                    meta: {title: '学生管理'}
+                },
+                {
+                    path: 'classes',
+                    name: 'ClassManage',
+                    component: () => import('@/views/teacher/ClassManage.vue'),
+                    meta: {title: '班级管理'}
+                },
+                {
+                    path: 'paper-preview/:id',
+                    name: 'PaperPreviewEdit',
+                    component: () => import('@/views/teacher/PaperPreviewEdit.vue'),
+                    meta: {title: '试卷预览编辑'}
                 }
             ]
         },
@@ -100,6 +118,28 @@ const router = createRouter({
             name: 'TakeExam',
             component: () => import('@/views/student/TakeExam.vue'),
             meta: {requiresAuth: true, role: 0, fullscreen: true}
+        },
+
+        // ========== 管理员端路由 ==========
+        {
+            path: '/admin',
+            component: () => import('@/views/admin/AdminLayout.vue'),
+            redirect: '/admin/students',
+            meta: {requiresAuth: true, role: 2},
+            children: [
+                {
+                    path: 'students',
+                    name: 'AdminStudentManage',
+                    component: () => import('@/views/admin/StudentManage.vue'),
+                    meta: {title: '学生管理'}
+                },
+                {
+                    path: 'import',
+                    name: 'AdminImportStudents',
+                    component: () => import('@/views/admin/ImportStudents.vue'),
+                    meta: {title: '批量导入'}
+                }
+            ]
         }
     ]
 })
@@ -128,7 +168,9 @@ router.beforeEach((to, from, next) => {
 
     // 角色权限检查
     if (to.meta.role !== undefined && userInfo.role !== to.meta.role) {
-        if (userInfo.role === 1) {
+        if (userInfo.role === 2) {
+            next('/admin/students')
+        } else if (userInfo.role === 1) {
             next('/teacher/dashboard')
         } else {
             next('/student/exams')

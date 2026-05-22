@@ -66,6 +66,23 @@
           />
         </el-form-item>
 
+        <!-- 分配班级 -->
+        <el-form-item label="分配班级">
+          <el-select
+              v-model="ruleForm.classIds"
+              multiple
+              placeholder="请选择班级（不选则所有学生可见）"
+              style="width: 100%"
+          >
+            <el-option
+                v-for="cls in classList"
+                :key="cls.id"
+                :label="cls.className"
+                :value="cls.id"
+            />
+          </el-select>
+        </el-form-item>
+
         <!-- 期望难度 -->
         <el-form-item label="期望难度">
           <el-slider
@@ -196,6 +213,7 @@ import request from '@/utils/request'
 const formRef = ref(null)
 const loading = ref(false)
 const subjectList = ref([])
+const classList = ref([])
 
 const ruleForm = reactive({
   title: '',
@@ -208,7 +226,8 @@ const ruleForm = reactive({
   multiChoiceScore: 4,
   subjectiveCount: 3,
   subjectiveScore: 10,
-  examTime: []
+  examTime: [],
+  classIds: []
 })
 
 const rules = reactive({
@@ -255,8 +274,19 @@ const loadSubjects = async () => {
   }
 }
 
+// 加载班级列表
+const loadClasses = async () => {
+  try {
+    const res = await request.get('/api/class/list')
+    classList.value = res.data || []
+  } catch {
+    ElMessage.error('加载班级列表失败')
+  }
+}
+
 onMounted(() => {
   loadSubjects()
+  loadClasses()
 })
 </script>
 

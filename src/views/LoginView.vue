@@ -184,13 +184,16 @@ const handleLogin = async () => {
       userStore.setUserInfo(user)
       ElMessage.success('登录成功')
       // 根据角色跳转
-      if (user.role === 1) {
+      if (user.role === 2) {
+        router.push('/admin/students')
+      } else if (user.role === 1) {
         router.push('/teacher/dashboard')
       } else {
         router.push('/student/exams')
       }
     } catch (err) {
-      ElMessage.error(err.response?.data?.message || '登录失败')
+      // 响应拦截器已处理提示，这里不再重复弹窗
+      // 如果需要额外处理可以在这里添加逻辑
     } finally {
       loading.value = false
     }

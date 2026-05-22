@@ -46,6 +46,23 @@
           />
         </el-form-item>
 
+        <!-- 分配班级 -->
+        <el-form-item label="分配班级">
+          <el-select
+              v-model="formData.classIds"
+              multiple
+              placeholder="请选择班级（不选则所有学生可见）"
+              style="width: 100%"
+          >
+            <el-option
+                v-for="cls in classList"
+                :key="cls.id"
+                :label="cls.className"
+                :value="cls.id"
+            />
+          </el-select>
+        </el-form-item>
+
         <!-- 题目选择区域 -->
         <el-form-item label="选择题目">
           <el-transfer
@@ -105,12 +122,14 @@ const formRef = ref(null)
 const loading = ref(false)
 const questionData = ref([])
 const subjectList = ref([])
+const classList = ref([])
 
 const formData = reactive({
   title: '',
   subjectName: '',
   questionIds: [],
-  examTime: []
+  examTime: [],
+  classIds: []
 })
 
 const rules = {
@@ -182,7 +201,8 @@ const handleSubmit = async () => {
       }
       await request.post('/api/paper/manual-create', {
         paper: paperData,
-        questionIds: formData.questionIds
+        questionIds: formData.questionIds,
+        classIds: formData.classIds
       })
       ElMessage.success('创建成功')
       router.push('/teacher/papers')
@@ -209,8 +229,19 @@ const loadSubjects = async () => {
   }
 }
 
+// 加载班级列表
+const loadClasses = async () => {
+  try {
+    const res = await request.get('/api/class/list')
+    classList.value = res.data || []
+  } catch {
+    ElMessage.error('加载班级列表失败')
+  }
+}
+
 onMounted(() => {
   loadSubjects()
+  loadClasses()
 })
 </script>
 

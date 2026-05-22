@@ -46,10 +46,16 @@
           <span>智能组卷</span>
         </el-menu-item>
         <el-menu-item index="/teacher/records">
-          <el-icon>
-            <DataAnalysis/>
-          </el-icon>
+          <el-icon><DataAnalysis /></el-icon>
           <span>成绩管理</span>
+        </el-menu-item>
+        <el-menu-item index="/teacher/users">
+          <el-icon><User /></el-icon>
+          <span>学生管理</span>
+        </el-menu-item>
+        <el-menu-item index="/teacher/classes">
+          <el-icon><School /></el-icon>
+          <span>班级管理</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -98,7 +104,7 @@ import {useRoute, useRouter} from 'vue-router'
 import {ElMessageBox} from 'element-plus'
 import {
   School, Odometer, Document, Files, MagicStick,
-  DataAnalysis, UserFilled, ArrowDown, EditPen
+  DataAnalysis, UserFilled, ArrowDown, EditPen, User
 } from '@element-plus/icons-vue'
 import {useUserStore} from '@/stores/user'
 import ChangePassword from '@/components/ChangePassword.vue'
@@ -117,7 +123,9 @@ const currentRoute = computed(() => {
     '/teacher/papers': '试卷管理',
     '/teacher/manual-paper': '手动组卷',
     '/teacher/auto-paper': '智能组卷',
-    '/teacher/records': '成绩管理'
+    '/teacher/records': '成绩管理',
+    '/teacher/users': '学生管理',
+    '/teacher/classes': '班级管理'
   }
   return map[route.path] || '首页'
 })
