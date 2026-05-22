@@ -15,6 +15,15 @@
         label-width="120px"
         size="large"
       >
+        <!-- 试卷名称 -->
+        <el-form-item label="试卷名称" prop="title">
+          <el-input
+            v-model="ruleForm.title"
+            placeholder="请输入试卷名称"
+            clearable
+          />
+        </el-form-item>
+
         <!-- 科目名称 -->
         <el-form-item label="科目名称" prop="subjectName">
           <el-select
@@ -38,6 +47,19 @@
             :min="10"
             :max="200"
             :step="10"
+            style="width: 100%"
+          />
+        </el-form-item>
+
+        <!-- 考试时间 -->
+        <el-form-item label="考试时间" prop="examTime">
+          <el-date-picker
+            v-model="ruleForm.examTime"
+            type="datetimerange"
+            range-separator="至"
+            start-placeholder="开始时间"
+            end-placeholder="结束时间"
+            value-format="YYYY-MM-DD HH:mm:ss"
             style="width: 100%"
           />
         </el-form-item>
@@ -172,6 +194,7 @@ const loading = ref(false)
 const subjectList = ref([])
 
 const ruleForm = reactive({
+  title: '',
   subjectName: '',
   totalScore: 100,
   targetDifficulty: 0.5,
@@ -180,10 +203,12 @@ const ruleForm = reactive({
   multiChoiceCount: 5,
   multiChoiceScore: 4,
   subjectiveCount: 3,
-  subjectiveScore: 10
+  subjectiveScore: 10,
+  examTime: []
 })
 
 const rules = reactive({
+  title: [{ required: true, message: '请输入试卷名称', trigger: 'blur' }],
   subjectName: [{ required: true, message: '请选择科目', trigger: 'change' }],
   totalScore: [{ required: true, message: '请设置试卷总分', trigger: 'blur' }]
 })
@@ -200,7 +225,12 @@ const handleSubmit = async () => {
     if (!valid) return
     loading.value = true
     try {
-      await request.post('/api/paper/auto-create', ruleForm)
+      const submitData = {
+        ...ruleForm,
+        startTime: ruleForm.examTime?.[0] || null,
+        endTime: ruleForm.examTime?.[1] || null
+      }
+      await request.post('/api/paper/auto-create', submitData)
       ElMessage.success('智能组卷成功！')
       formRef.value.resetFields()
     } catch (err) {

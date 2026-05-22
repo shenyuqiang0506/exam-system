@@ -33,6 +33,19 @@
           </el-col>
         </el-row>
 
+        <!-- 考试时间 -->
+        <el-form-item label="考试时间" prop="examTime">
+          <el-date-picker
+            v-model="formData.examTime"
+            type="datetimerange"
+            range-separator="至"
+            start-placeholder="开始时间"
+            end-placeholder="结束时间"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            style="width: 100%"
+          />
+        </el-form-item>
+
         <!-- 题目选择区域 -->
         <el-form-item label="选择题目">
           <el-transfer
@@ -94,7 +107,8 @@ const subjectList = ref([])
 const formData = reactive({
   title: '',
   subjectName: '',
-  questionIds: []
+  questionIds: [],
+  examTime: []
 })
 
 const rules = {
@@ -157,8 +171,14 @@ const handleSubmit = async () => {
     }
     loading.value = true
     try {
+      const paperData = {
+        title: formData.title,
+        subjectName: formData.subjectName,
+        startTime: formData.examTime?.[0] || null,
+        endTime: formData.examTime?.[1] || null
+      }
       await request.post('/api/paper/manual-create', {
-        paper: { title: formData.title, subjectName: formData.subjectName },
+        paper: paperData,
         questionIds: formData.questionIds
       })
       ElMessage.success('创建成功')

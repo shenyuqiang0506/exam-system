@@ -14,7 +14,32 @@
             <p><el-icon><Trophy /></el-icon> 总分：{{ paper.totalScore }} 分</p>
             <p><el-icon><Calendar /></el-icon> 创建时间：{{ paper.createTime }}</p>
           </div>
-          <el-button type="primary" style="width: 100%" @click="startExam(paper)">
+
+          <!-- 根据考试状态显示不同按钮 -->
+          <el-button
+            v-if="paper.completed"
+            type="info"
+            style="width: 100%"
+            disabled
+          >
+            <el-icon><CircleCheck /></el-icon>
+            已完成考试
+          </el-button>
+          <el-button
+            v-else-if="paper.ongoing"
+            type="warning"
+            style="width: 100%"
+            @click="continueExam(paper)"
+          >
+            <el-icon><RefreshRight /></el-icon>
+            继续考试
+          </el-button>
+          <el-button
+            v-else
+            type="primary"
+            style="width: 100%"
+            @click="startExam(paper)"
+          >
             <el-icon><CaretRight /></el-icon>
             开始考试
           </el-button>
@@ -30,7 +55,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Timer, Trophy, Calendar, CaretRight } from '@element-plus/icons-vue'
+import { Timer, Trophy, Calendar, CaretRight, CircleCheck, RefreshRight } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 
 const router = useRouter()
@@ -41,7 +66,33 @@ const loadPapers = async () => {
   loading.value = true
   try {
     const res = await request.get('/api/paper/list-active')
-    paperList.value = res.data
+    const papers = res.data || []
+
+    // 获取每张试卷的考试状态
+    for (let paper of papers) {
+      try {
+        const recordRes = await request.get(`/api/record/check/${paper.id}`)
+        if (recordRes.data) {
+          paper.completed = recordRes.data.status === 1
+          paper.ongoing = recordRes.data.status === 0
+          paper.recordId = recordRes.data.id
+        } else {
+          paper.completed = false
+          paper.ongoing = false
+        }
+      } catch (err) {
+        // 如果返回 403，说明已完成考试
+        if (err.response?.status === 403 || err.response?.data?.code === 403) {
+          paper.completed = true
+          paper.ongoing = false
+        } else {
+          paper.completed = false
+          paper.ongoing = false
+        }
+      }
+    }
+
+    paperList.value = papers
   } catch {
     ElMessage.error('加载试卷列表失败')
   } finally {
@@ -55,6 +106,10 @@ const startExam = async (paper) => {
     '开始考试',
     { confirmButtonText: '开始', cancelButtonText: '取消', type: 'warning' }
   )
+  router.push(`/student/exam/${paper.id}`)
+}
+
+const continueExam = (paper) => {
   router.push(`/student/exam/${paper.id}`)
 }
 

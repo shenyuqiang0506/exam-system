@@ -14,8 +14,8 @@
         router
       >
         <el-menu-item index="/student/exams">
-          <el-icon><List /></el-icon>
-          <span>考试列表</span>
+          <el-icon><Collection /></el-icon>
+          <span>考试中心</span>
         </el-menu-item>
         <el-menu-item index="/student/records">
           <el-icon><TrendCharts /></el-icon>
@@ -63,7 +63,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import {
-  School, List, TrendCharts, UserFilled, ArrowDown
+  School, Collection, TrendCharts, UserFilled, ArrowDown
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
@@ -75,7 +75,7 @@ const activeMenu = computed(() => route.path)
 
 const currentRoute = computed(() => {
   const map = {
-    '/student/exams': '考试列表',
+    '/student/exams': '考试中心',
     '/student/records': '我的成绩'
   }
   return map[route.path] || '首页'

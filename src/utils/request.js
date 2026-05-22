@@ -24,7 +24,7 @@ request.interceptors.request.use(
 // 响应拦截器
 request.interceptors.response.use(
   response => {
-    // 文件流（blob）直接返回原始响应，不走 JSON 解析
+    // 文件流直接返回
     if (response.config.responseType === 'blob') {
       return response
     }
@@ -37,6 +37,13 @@ request.interceptors.response.use(
         router.push('/login')
         ElMessage.error('登录已过期，请重新登录')
         return Promise.reject(new Error(res.message))
+      }
+      // 403 业务错误：不弹出提示，让组件自行处理
+      if (res.code === 403) {
+        const error = new Error(res.message)
+        error.code = 403
+        error.data = res.data
+        return Promise.reject(error)
       }
       // 其他业务错误
       ElMessage.error(res.message || '请求失败')
@@ -53,7 +60,7 @@ request.interceptors.response.use(
         router.push('/login')
         ElMessage.error('登录已过期，请重新登录')
       } else if (status === 403) {
-        ElMessage.error('没有权限访问')
+        // HTTP 403：不弹出提示
       } else if (status === 500) {
         ElMessage.error('服务器内部错误')
       } else {

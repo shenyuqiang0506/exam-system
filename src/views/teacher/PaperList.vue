@@ -28,22 +28,35 @@
       <el-table :data="filteredPapers" v-loading="loading" stripe border>
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="title" label="试卷名称" min-width="180" />
-        <el-table-column prop="subjectName" label="科目" width="120" />
-        <el-table-column prop="totalScore" label="总分" width="80" />
-        <el-table-column prop="targetDifficulty" label="目标难度" width="100">
-          <template #default="{ row }">{{ row.targetDifficulty?.toFixed(1) }}</template>
-        </el-table-column>
-        <el-table-column prop="isArchived" label="状态" width="100">
+        <el-table-column prop="subjectName" label="科目" width="100" />
+        <el-table-column prop="totalScore" label="总分" width="70" />
+        <el-table-column label="开始时间" width="160">
           <template #default="{ row }">
-            <el-tag :type="row.isArchived === 0 ? 'success' : 'info'">
+            {{ formatTime(row.startTime) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="结束时间" width="160">
+          <template #default="{ row }">
+            {{ formatTime(row.endTime) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="考试状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="getStatusType(row)" size="small">
+              {{ getStatusText(row) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="isArchived" label="归档状态" width="90">
+          <template #default="{ row }">
+            <el-tag :type="row.isArchived === 0 ? 'success' : 'info'" size="small">
               {{ row.isArchived === 0 ? '正常' : '已归档' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180" />
-        <el-table-column label="操作" width="250" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="viewDetail(row)">查看详情</el-button>
+            <el-button type="primary" link @click="viewDetail(row)">详情</el-button>
             <el-popconfirm
               v-if="row.isArchived === 0"
               title="确定归档该试卷？"
@@ -55,7 +68,7 @@
             </el-popconfirm>
             <el-button type="success" link @click="exportScore(row.id)">
               <el-icon><Download /></el-icon>
-              导出成绩
+              成绩
             </el-button>
           </template>
         </el-table-column>
@@ -100,6 +113,33 @@ const filteredPapers = computed(() => {
   if (!searchSubject.value) return paperList.value
   return paperList.value.filter(p => p.subjectName === searchSubject.value)
 })
+
+// 格式化时间
+const formatTime = (timeStr) => {
+  if (!timeStr) return '-'
+  return timeStr.replace('T', ' ').substring(0, 16)
+}
+
+// 获取考试状态
+const getStatusText = (paper) => {
+  if (!paper.startTime || !paper.endTime) return '无限制'
+  const now = new Date()
+  const start = new Date(paper.startTime)
+  const end = new Date(paper.endTime)
+  if (now < start) return '未开始'
+  if (now > end) return '已结束'
+  return '进行中'
+}
+
+const getStatusType = (paper) => {
+  const status = getStatusText(paper)
+  return {
+    '未开始': 'info',
+    '进行中': 'success',
+    '已结束': 'danger',
+    '无限制': 'warning'
+  }[status] || 'info'
+}
 
 const loadPapers = async () => {
   loading.value = true

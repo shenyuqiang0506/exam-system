@@ -75,9 +75,9 @@ const router = createRouter({
       children: [
         {
           path: 'exams',
-          name: 'ExamList',
-          component: () => import('@/views/student/ExamList.vue'),
-          meta: { title: '考试列表' }
+          name: 'ExamCenter',
+          component: () => import('@/views/student/ExamCenter.vue'),
+          meta: { title: '考试中心' }
         },
         {
           path: 'records',

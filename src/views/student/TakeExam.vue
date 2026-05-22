@@ -1,5 +1,5 @@
 <template>
-  <div class="exam-container">
+  <div class="exam-container" v-if="!blocked">
     <div class="exam-header">
       <div class="header-left">
         <span class="paper-title">{{ paperInfo.title }}</span>
@@ -69,6 +69,8 @@ const questions = ref([])
 const answers = reactive({})
 const submitting = ref(false)
 const remainingSeconds = ref(7200)
+const recordId = ref(null)
+const blocked = ref(false)
 let timer = null
 
 const formattedTime = computed(() => {
@@ -81,19 +83,28 @@ const formattedTime = computed(() => {
 const getTypeName = (type) => ({1:'单选题',2:'多选题',4:'主观题'}[type]||'未知')
 const getTypeTag = (type) => ({1:'',2:'warning',4:'success'}[type]||'info')
 
+const blockAndRedirect = (msg) => {
+  blocked.value = true
+  ElMessage.warning(msg || '您已完成该试卷考试，不可重复参加')
+  setTimeout(() => router.push('/student/exams'), 1500)
+}
+
 const loadExamData = async () => {
   try {
     const res = await request.get(`/api/paper/detail/${route.params.paperId}`)
+
+    if (res.data?.ongoingRecord) {
+      recordId.value = res.data.ongoingRecord.id
+      ElMessage.info('继续上次考试')
+    }
+
     paperInfo.title = res.data.paper.title
     paperInfo.totalScore = res.data.paper.totalScore
 
-    // 解析后端返回的完整题目列表，处理选项 JSON
     questions.value = (res.data.questions || []).map(q => {
       let displayContent = q.content
       let options = []
-
       if (q.type === 1 || q.type === 2) {
-        // 单选/多选：尝试解析 JSON 格式 {"title":"...","options":[...]}
         try {
           const parsed = JSON.parse(q.content)
           if (parsed && parsed.title) {
@@ -101,22 +112,33 @@ const loadExamData = async () => {
             options = parsed.options || []
           }
         } catch (e) {
-          // content 是纯文本，选项不可用，原样展示
           displayContent = q.content
         }
       }
-
       return { ...q, content: displayContent, options }
     })
 
     questions.value.forEach(q => {
       answers[q.id] = q.type === 2 ? [] : ''
     })
-  } catch { ElMessage.error('加载试卷失败') }
+    return true
+  } catch (err) {
+    // 403 业务错误（通过 error.code 判断）
+    if (err.code === 403) {
+      blockAndRedirect(err.message)
+      return false
+    }
+    // 其他错误
+    ElMessage.error('加载试卷失败')
+    router.push('/student/exams')
+    return false
+  }
 }
 
-onMounted(() => {
-  loadExamData()
+onMounted(async () => {
+  const success = await loadExamData()
+  if (!success) return
+
   timer = setInterval(() => {
     if (remainingSeconds.value > 0) remainingSeconds.value--
     else { clearInterval(timer); ElMessage.warning('时间到！'); doSubmit() }
@@ -134,14 +156,21 @@ const doSubmit = async () => {
   submitting.value = true
   try {
     const submitData = {
-      paperId: route.params.paperId,   // 保持字符串，避免 JS Number 精度丢失
+      paperId: route.params.paperId,
       answers: Object.entries(answers).map(([qId,ans])=>({questionId:qId,answer:Array.isArray(ans)?ans.join(','):ans}))
     }
     const res = await request.post('/api/record/submit', submitData)
     ElMessage.success('交卷成功！')
     router.push(`/student/result/${res.data}`)
-  } catch { ElMessage.error('交卷失败') }
-  finally { submitting.value = false }
+  } catch (err) {
+    if (err.code === 403) {
+      blockAndRedirect(err.message)
+    } else {
+      ElMessage.error('交卷失败')
+    }
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
