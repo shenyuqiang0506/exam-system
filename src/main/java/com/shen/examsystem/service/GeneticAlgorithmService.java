@@ -116,6 +116,7 @@ public class GeneticAlgorithmService {
         Map<Integer, Integer> map = new HashMap<>();
         map.put(1, rule.getSingleChoiceCount());
         map.put(2, rule.getMultiChoiceCount());
+        map.put(3, rule.getTrueFalseCount() != null ? rule.getTrueFalseCount() : 0);
         map.put(4, rule.getSubjectiveCount());
         return map;
     }
@@ -127,6 +128,7 @@ public class GeneticAlgorithmService {
         Map<Integer, BigDecimal> map = new HashMap<>();
         map.put(1, rule.getSingleChoiceScore());
         map.put(2, rule.getMultiChoiceScore());
+        map.put(3, rule.getTrueFalseScore() != null ? rule.getTrueFalseScore() : BigDecimal.ZERO);
         map.put(4, rule.getSubjectiveScore());
         return map;
     }

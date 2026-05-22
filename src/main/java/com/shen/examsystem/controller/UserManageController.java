@@ -46,6 +46,9 @@ public class UserManageController {
     @Autowired
     private ClassStudentMapper classStudentMapper;
 
+    @Autowired
+    private com.shen.examsystem.service.ExamRecordService examRecordService;
+
     /**
      * 获取学生列表（分页）
      */
@@ -135,6 +138,21 @@ public class UserManageController {
      */
     @DeleteMapping("/users/{id}")
     public Result<Void> deleteUser(@PathVariable Long id) {
+        // 检查是否有考试记录
+        LambdaQueryWrapper<com.shen.examsystem.entity.ExamRecord> recordWrapper = new LambdaQueryWrapper<>();
+        recordWrapper.eq(com.shen.examsystem.entity.ExamRecord::getStudentId, id);
+        if (examRecordService.count(recordWrapper) > 0) {
+            return Result.error("该用户有考试记录，无法删除");
+        }
+
+        // 检查是否在班级中
+        LambdaQueryWrapper<com.shen.examsystem.entity.ClassStudent> csWrapper = new LambdaQueryWrapper<>();
+        csWrapper.eq(com.shen.examsystem.entity.ClassStudent::getStudentId, id);
+        if (classStudentMapper.selectCount(csWrapper) > 0) {
+            // 先移除班级关联
+            classStudentMapper.delete(csWrapper);
+        }
+
         sysUserService.removeById(id);
         return Result.success("删除成功", null);
     }

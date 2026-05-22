@@ -19,7 +19,7 @@ public class ClassInfo {
     /** 班级名称 */
     private String className;
 
-    /** 教师ID */
+    /** 教师ID (NULL表示未指定) */
     private Long teacherId;
 
     /** 班级描述 */

@@ -137,7 +137,7 @@ DROP TABLE IF EXISTS class_info;
 CREATE TABLE class_info (
     id              BIGINT       NOT NULL COMMENT '班级ID (雪花算法)',
     class_name      VARCHAR(100) NOT NULL COMMENT '班级名称',
-    teacher_id      BIGINT       NOT NULL COMMENT '教师ID',
+    teacher_id      BIGINT       DEFAULT NULL COMMENT '教师ID (NULL表示未指定)',
     description     VARCHAR(500) DEFAULT NULL COMMENT '班级描述',
     create_time     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

@@ -35,6 +35,11 @@ public class PaperRuleDTO {
     /** 多选题单分 */
     private BigDecimal multiChoiceScore;
 
+    /** 判断题数量 (题型=3) */
+    private Integer trueFalseCount;
+    /** 判断题单分 */
+    private BigDecimal trueFalseScore;
+
     /** 主观题数量 (题型=4) */
     private Integer subjectiveCount;
     /** 主观题单分 */

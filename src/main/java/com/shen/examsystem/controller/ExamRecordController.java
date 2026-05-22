@@ -3,7 +3,10 @@ package com.shen.examsystem.controller;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.shen.examsystem.common.Result;
+import com.shen.examsystem.entity.ExamPaper;
 import com.shen.examsystem.entity.ExamRecord;
+import com.shen.examsystem.interceptor.RequireRole;
+import com.shen.examsystem.service.ExamPaperService;
 import com.shen.examsystem.service.ExamRecordService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -13,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,6 +30,9 @@ public class ExamRecordController {
 
     @Autowired
     private ExamRecordService examRecordService;
+
+    @Autowired
+    private ExamPaperService examPaperService;
 
     /**
      * 检查学生对某试卷的考试状态
@@ -66,6 +73,14 @@ public class ExamRecordController {
             return Result.error(403, "您已完成该试卷考试，不可重复交卷");
         }
 
+        // 检查试卷是否已过期
+        ExamPaper paper = examPaperService.getById(submitDTO.getPaperId());
+        if (paper != null && paper.getEndTime() != null) {
+            if (LocalDateTime.now().isAfter(paper.getEndTime())) {
+                return Result.error(403, "考试已结束，无法交卷");
+            }
+        }
+
         Long recordId = examRecordService.submitPaper(studentId, submitDTO.getPaperId(), submitDTO.getAnswers());
         return Result.success("交卷成功", recordId);
     }
@@ -88,8 +103,21 @@ public class ExamRecordController {
      * 查询考试成绩详情
      */
     @GetMapping("/detail/{recordId}")
-    public Result<Map<String, Object>> detail(@PathVariable Long recordId) {
+    public Result<Map<String, Object>> detail(@PathVariable Long recordId, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        String role = (String) request.getAttribute("role");
+
+        // 获取记录详情
         Map<String, Object> detail = examRecordService.getRecordDetail(recordId);
+
+        // 学生只能查看自己的记录
+        if ("student".equals(role) || "0".equals(role)) {
+            ExamRecord record = (ExamRecord) detail.get("record");
+            if (record != null && !record.getStudentId().equals(userId)) {
+                return Result.error(403, "无权查看他人成绩");
+            }
+        }
+
         return Result.success(detail);
     }
 
@@ -97,6 +125,7 @@ public class ExamRecordController {
      * 查询某试卷的所有成绩列表（教师端）
      */
     @GetMapping("/list/{paperId}")
+    @RequireRole({1, 2})  // 教师和管理员
     public Result<List<ExamRecord>> listByPaperId(@PathVariable Long paperId) {
         List<ExamRecord> records = examRecordService.listByPaperId(paperId);
         return Result.success(records);
@@ -106,6 +135,7 @@ public class ExamRecordController {
      * 导出成绩到 Excel
      */
     @GetMapping("/export/{paperId}")
+    @RequireRole({1, 2})  // 教师和管理员
     public void export(@PathVariable Long paperId, HttpServletResponse response) throws Exception {
         List<ExamRecord> records = examRecordService.listByPaperId(paperId);
 

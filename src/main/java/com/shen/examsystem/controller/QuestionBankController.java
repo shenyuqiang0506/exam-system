@@ -6,8 +6,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shen.examsystem.common.Result;
 import com.shen.examsystem.dto.QuestionExcelDTO;
 import com.shen.examsystem.entity.QuestionBank;
+import com.shen.examsystem.entity.PaperQuestion;
 import com.shen.examsystem.interceptor.RequireRole;
 import com.shen.examsystem.listener.QuestionExcelListener;
+import com.shen.examsystem.mapper.PaperQuestionMapper;
 import com.shen.examsystem.service.QuestionBankService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -33,6 +35,9 @@ public class QuestionBankController {
 
     @Autowired
     private QuestionBankService questionBankService;
+
+    @Autowired
+    private PaperQuestionMapper paperQuestionMapper;
 
     /**
      * 分页条件查询题目（教师只能看自己的题目 + 公共题目）
@@ -126,6 +131,12 @@ public class QuestionBankController {
      */
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
+        // 检查题目是否被试卷引用
+        LambdaQueryWrapper<PaperQuestion> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PaperQuestion::getQuestionId, id);
+        if (paperQuestionMapper.selectCount(wrapper) > 0) {
+            return Result.error("该题目已被试卷引用，无法删除");
+        }
         questionBankService.removeById(id);
         return Result.success();
     }

@@ -7,6 +7,7 @@ import com.shen.examsystem.entity.ExamPaper;
 import com.shen.examsystem.entity.ExamRecord;
 import com.shen.examsystem.entity.AnswerDetail;
 import com.shen.examsystem.entity.PaperQuestion;
+import com.shen.examsystem.entity.PaperClass;
 import com.shen.examsystem.mapper.AnswerDetailMapper;
 import com.shen.examsystem.mapper.ExamPaperMapper;
 import com.shen.examsystem.mapper.PaperQuestionMapper;
@@ -68,12 +69,30 @@ public class ExamPaperServiceImpl extends ServiceImpl<ExamPaperMapper, ExamPaper
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deletePaper(Long paperId) {
-        // 1. 删除试卷题目的关联
-        LambdaQueryWrapper<PaperQuestion> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(PaperQuestion::getPaperId, paperId);
-        paperQuestionMapper.delete(wrapper);
+        // 1. 删除试卷题目关联
+        LambdaQueryWrapper<PaperQuestion> pqWrapper = new LambdaQueryWrapper<>();
+        pqWrapper.eq(PaperQuestion::getPaperId, paperId);
+        paperQuestionMapper.delete(pqWrapper);
 
-        // 2. 删除试卷
+        // 2. 删除试卷班级关联
+        LambdaQueryWrapper<com.shen.examsystem.entity.PaperClass> pcWrapper = new LambdaQueryWrapper<>();
+        pcWrapper.eq(com.shen.examsystem.entity.PaperClass::getPaperId, paperId);
+        paperClassService.remove(pcWrapper);
+
+        // 3. 删除考试记录关联的答题明细
+        LambdaQueryWrapper<ExamRecord> erWrapper = new LambdaQueryWrapper<>();
+        erWrapper.eq(ExamRecord::getPaperId, paperId);
+        List<ExamRecord> records = examRecordService.list(erWrapper);
+        for (ExamRecord record : records) {
+            LambdaQueryWrapper<AnswerDetail> adWrapper = new LambdaQueryWrapper<>();
+            adWrapper.eq(AnswerDetail::getRecordId, record.getId());
+            answerDetailMapper.delete(adWrapper);
+        }
+
+        // 4. 删除考试记录
+        examRecordService.remove(erWrapper);
+
+        // 5. 删除试卷
         this.removeById(paperId);
     }
 

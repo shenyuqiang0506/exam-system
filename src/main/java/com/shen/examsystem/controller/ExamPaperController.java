@@ -162,6 +162,7 @@ public class ExamPaperController {
      * 更新试卷基本信息
      */
     @PutMapping("/{id}")
+    @RequireRole({1, 2})  // 教师和管理员
     public Result<Void> update(@PathVariable Long id, @RequestBody ExamPaper paper) {
         paper.setId(id);
         examPaperService.updateById(paper);

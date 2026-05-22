@@ -55,7 +55,16 @@ public class ExamRecordServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRec
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long submitPaper(Long studentId, Long paperId, List<?> answers) {
-        // 1. 获取试卷中的所有题目（用于判分）
+        // 1. 并发保护：再次检查是否已交卷
+        LambdaQueryWrapper<ExamRecord> existWrapper = new LambdaQueryWrapper<>();
+        existWrapper.eq(ExamRecord::getStudentId, studentId)
+                    .eq(ExamRecord::getPaperId, paperId)
+                    .eq(ExamRecord::getStatus, 1);
+        if (this.count(existWrapper) > 0) {
+            throw new RuntimeException("您已完成该试卷考试，不可重复交卷");
+        }
+
+        // 2. 获取试卷中的所有题目（用于判分）
         LambdaQueryWrapper<PaperQuestion> pqWrapper = new LambdaQueryWrapper<>();
         pqWrapper.eq(PaperQuestion::getPaperId, paperId);
         List<PaperQuestion> paperQuestions = paperQuestionMapper.selectList(pqWrapper);

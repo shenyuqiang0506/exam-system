@@ -47,6 +47,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             throw new RuntimeException("用户不存在");
         }
 
+        // 检查用户状态
+        if (user.getStatus() != null && user.getStatus() == 0) {
+            throw new RuntimeException("账号已被禁用，请联系管理员");
+        }
+
         // BCrypt 密码验证
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new RuntimeException("密码错误");
@@ -61,6 +66,13 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         wrapper.eq(SysUser::getUsername, user.getUsername());
         if (this.count(wrapper) > 0) {
             throw new RuntimeException("用户名已存在");
+        }
+        // 设置默认值
+        if (user.getRole() == null) {
+            user.setRole(0); // 默认学生
+        }
+        if (user.getStatus() == null) {
+            user.setStatus(1); // 默认正常
         }
         // BCrypt 加密密码
         user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -113,11 +125,19 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                     // 用户名 = 学号
                     String username = data.getStudentNo();
 
-                    // 检查学号是否已存在
+                    // 检查学号是否已存在（数据库中）
                     LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<>();
                     wrapper.eq(SysUser::getUsername, username);
                     if (SysUserServiceImpl.this.count(wrapper) > 0) {
-                        errors.add("第" + rowIndex + "行: 学号 " + username + " 已存在");
+                        errors.add("第" + rowIndex + "行: 学号 " + username + " 已存在于数据库");
+                        return;
+                    }
+
+                    // 检查本次导入中是否有重复学号
+                    boolean duplicate = students.stream()
+                            .anyMatch(s -> username.equals(s.getUsername()));
+                    if (duplicate) {
+                        errors.add("第" + rowIndex + "行: 学号 " + username + " 在本次导入中重复");
                         return;
                     }
 
