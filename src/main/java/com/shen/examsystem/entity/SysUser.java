@@ -37,6 +37,9 @@ public class SysUser {
     /** 班级 */
     private String className;
 
+    /** 头像URL */
+    private String avatar;
+
     /** 角色: 0-学生, 1-教师, 2-管理员 */
     private Integer role;
 

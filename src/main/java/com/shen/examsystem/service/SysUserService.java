@@ -34,6 +34,12 @@ public interface SysUserService extends IService<SysUser> {
     void changePassword(Long userId, String oldPassword, String newPassword);
 
     /**
+     * 重置密码为默认密码
+     * @param userId 用户ID
+     */
+    void resetPassword(Long userId);
+
+    /**
      * 批量导入学生
      * @param file Excel文件
      * @return 导入结果

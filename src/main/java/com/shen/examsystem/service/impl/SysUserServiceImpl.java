@@ -6,10 +6,17 @@ import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.read.listener.ReadListener;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.shen.examsystem.entity.ClassInfo;
+import com.shen.examsystem.entity.ClassStudent;
 import com.shen.examsystem.entity.SysUser;
+import com.shen.examsystem.mapper.ClassInfoMapper;
+import com.shen.examsystem.mapper.ClassStudentMapper;
 import com.shen.examsystem.mapper.SysUserMapper;
 import com.shen.examsystem.service.SysUserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -22,6 +29,14 @@ import java.util.List;
 @Service
 public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
 
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    @Autowired
+    private ClassInfoMapper classInfoMapper;
+
+    @Autowired
+    private ClassStudentMapper classStudentMapper;
+
     @Override
     public SysUser login(String username, String password) {
         LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<>();
@@ -32,7 +47,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             throw new RuntimeException("用户不存在");
         }
 
-        if (!user.getPassword().equals(password)) {
+        // BCrypt 密码验证
+        if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new RuntimeException("密码错误");
         }
 
@@ -46,6 +62,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (this.count(wrapper) > 0) {
             throw new RuntimeException("用户名已存在");
         }
+        // BCrypt 加密密码
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         this.save(user);
     }
 
@@ -55,14 +73,27 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (user == null) {
             throw new RuntimeException("用户不存在");
         }
-        if (!user.getPassword().equals(oldPassword)) {
+        // 验证旧密码
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
             throw new RuntimeException("旧密码错误");
         }
-        user.setPassword(newPassword);
+        // 加密新密码
+        user.setPassword(passwordEncoder.encode(newPassword));
         this.updateById(user);
     }
 
     @Override
+    public void resetPassword(Long userId) {
+        SysUser user = this.getById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        user.setPassword(passwordEncoder.encode("123456"));
+        this.updateById(user);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public String importStudents(MultipartFile file) {
         List<SysUser> students = new ArrayList<>();
         List<String> errors = new ArrayList<>();
@@ -73,21 +104,31 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                 public void invoke(StudentImportDTO data, AnalysisContext context) {
                     int rowIndex = context.readRowHolder().getRowIndex() + 1;
 
-                    if (data.getUsername() == null || data.getUsername().isEmpty()) {
-                        errors.add("第" + rowIndex + "行: 用户名不能为空");
+                    // 学号必填
+                    if (data.getStudentNo() == null || data.getStudentNo().isEmpty()) {
+                        errors.add("第" + rowIndex + "行: 学号不能为空");
                         return;
                     }
 
+                    // 用户名 = 学号
+                    String username = data.getStudentNo();
+
+                    // 检查学号是否已存在
                     LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<>();
-                    wrapper.eq(SysUser::getUsername, data.getUsername());
+                    wrapper.eq(SysUser::getUsername, username);
                     if (SysUserServiceImpl.this.count(wrapper) > 0) {
-                        errors.add("第" + rowIndex + "行: 用户名 " + data.getUsername() + " 已存在");
+                        errors.add("第" + rowIndex + "行: 学号 " + username + " 已存在");
                         return;
                     }
+
+                    // 初始密码 = 学号后6位（如果学号不足6位则用学号本身）
+                    String rawPassword = username.length() > 6
+                        ? username.substring(username.length() - 6)
+                        : username;
 
                     SysUser student = new SysUser();
-                    student.setUsername(data.getUsername());
-                    student.setPassword(data.getPassword() != null && !data.getPassword().isEmpty() ? data.getPassword() : "123456");
+                    student.setUsername(username);
+                    student.setPassword(passwordEncoder.encode(rawPassword));
                     student.setRealName(data.getRealName());
                     student.setStudentNo(data.getStudentNo());
                     student.setPhone(data.getPhone());
@@ -102,8 +143,22 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                 public void doAfterAllAnalysed(AnalysisContext context) {}
             }).sheet().doRead();
 
+            // 批量保存学生并关联班级
             if (!students.isEmpty()) {
                 this.saveBatch(students);
+
+                // 处理班级关联
+                for (SysUser student : students) {
+                    if (student.getClassName() != null && !student.getClassName().isEmpty()) {
+                        // 查找或创建班级
+                        ClassInfo classInfo = findOrCreateClass(student.getClassName());
+                        // 建立学生-班级关联
+                        ClassStudent cs = new ClassStudent();
+                        cs.setClassId(classInfo.getId());
+                        cs.setStudentId(student.getId());
+                        classStudentMapper.insert(cs);
+                    }
+                }
             }
 
             StringBuilder result = new StringBuilder();
@@ -112,6 +167,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                 result.append(", 失败 ").append(errors.size()).append(" 条");
                 result.append("。失败原因: ").append(String.join("; ", errors));
             }
+            if (!students.isEmpty()) {
+                result.append("。初始密码为学号后6位");
+            }
             return result.toString();
 
         } catch (IOException e) {
@@ -119,13 +177,34 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         }
     }
 
+    /**
+     * 查找或创建班级
+     */
+    private ClassInfo findOrCreateClass(String className) {
+        LambdaQueryWrapper<ClassInfo> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ClassInfo::getClassName, className);
+        ClassInfo classInfo = classInfoMapper.selectOne(wrapper);
+
+        if (classInfo == null) {
+            // 班级不存在，自动创建
+            classInfo = new ClassInfo();
+            classInfo.setClassName(className);
+            classInfo.setDescription("导入学生时自动创建");
+            classInfo.setTeacherId(0L); // 默认无教师
+            classInfoMapper.insert(classInfo);
+        }
+        return classInfo;
+    }
+
     @Override
     public List<List<String>> getImportTemplate() {
         List<List<String>> data = new ArrayList<>();
-        data.add(List.of("用户名", "密码", "真实姓名", "学号", "手机号", "邮箱", "班级"));
-        data.add(List.of("student001", "123456", "张三", "2024001", "13800138001", "zhangsan@example.com", "计算机2401班"));
-        data.add(List.of("student002", "123456", "李四", "2024002", "13800138002", "lisi@example.com", "计算机2401班"));
-        data.add(List.of("student003", "", "王五", "2024003", "", "", "计算机2402班"));
+        // 表头：只填学号、姓名、班级等信息，不需要填用户名和密码
+        data.add(List.of("学号", "真实姓名", "班级", "手机号", "邮箱"));
+        // 示例数据
+        data.add(List.of("2024001", "张三", "计算机2401班", "13800138001", "zhangsan@example.com"));
+        data.add(List.of("2024002", "李四", "计算机2401班", "13800138002", "lisi@example.com"));
+        data.add(List.of("2024003", "王五", "计算机2402班", "", ""));
         return data;
     }
 
@@ -133,17 +212,14 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
      * 导入DTO
      */
     public static class StudentImportDTO {
-        @ExcelProperty("用户名")
-        private String username;
-
-        @ExcelProperty("密码")
-        private String password;
+        @ExcelProperty("学号")
+        private String studentNo;
 
         @ExcelProperty("真实姓名")
         private String realName;
 
-        @ExcelProperty("学号")
-        private String studentNo;
+        @ExcelProperty("班级")
+        private String className;
 
         @ExcelProperty("手机号")
         private String phone;
@@ -151,17 +227,18 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         @ExcelProperty("邮箱")
         private String email;
 
-        @ExcelProperty("班级")
-        private String className;
+        // 保留 username 和 password 字段以兼容旧代码，但不作为 Excel 列
+        private String username;
+        private String password;
 
         public String getUsername() { return username; }
         public void setUsername(String username) { this.username = username; }
         public String getPassword() { return password; }
         public void setPassword(String password) { this.password = password; }
-        public String getRealName() { return realName; }
-        public void setRealName(String realName) { this.realName = realName; }
         public String getStudentNo() { return studentNo; }
         public void setStudentNo(String studentNo) { this.studentNo = studentNo; }
+        public String getRealName() { return realName; }
+        public void setRealName(String realName) { this.realName = realName; }
         public String getPhone() { return phone; }
         public void setPhone(String phone) { this.phone = phone; }
         public String getEmail() { return email; }

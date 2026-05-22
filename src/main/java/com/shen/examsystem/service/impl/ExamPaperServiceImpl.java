@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shen.examsystem.entity.ExamPaper;
 import com.shen.examsystem.entity.ExamRecord;
+import com.shen.examsystem.entity.AnswerDetail;
 import com.shen.examsystem.entity.PaperQuestion;
+import com.shen.examsystem.mapper.AnswerDetailMapper;
 import com.shen.examsystem.mapper.ExamPaperMapper;
 import com.shen.examsystem.mapper.PaperQuestionMapper;
 import com.shen.examsystem.service.ExamPaperService;
@@ -34,6 +36,9 @@ public class ExamPaperServiceImpl extends ServiceImpl<ExamPaperMapper, ExamPaper
 
     @Autowired
     private PaperClassService paperClassService;
+
+    @Autowired
+    private AnswerDetailMapper answerDetailMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -234,7 +239,14 @@ public class ExamPaperServiceImpl extends ServiceImpl<ExamPaperMapper, ExamPaper
      * 获取已答题数量
      */
     private int getAnsweredCount(Long recordId) {
-        // 这里简化处理，实际应该查询 answer_detail 表
-        return 0;
+        if (recordId == null) {
+            return 0;
+        }
+        LambdaQueryWrapper<AnswerDetail> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AnswerDetail::getRecordId, recordId)
+               .isNotNull(AnswerDetail::getStudentAnswer)
+               .ne(AnswerDetail::getStudentAnswer, "");
+        Long count = answerDetailMapper.selectCount(wrapper);
+        return count != null ? count.intValue() : 0;
     }
 }

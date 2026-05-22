@@ -2,6 +2,7 @@ package com.shen.examsystem.controller;
 
 import com.shen.examsystem.common.Result;
 import com.shen.examsystem.entity.ClassInfo;
+import com.shen.examsystem.interceptor.RequireRole;
 import com.shen.examsystem.service.ClassInfoService;
 import com.shen.examsystem.service.ClassStudentService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,6 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 班级管理 Controller
+ */
 @RestController
 @RequestMapping("/api/class")
 public class ClassInfoController {
@@ -25,6 +29,7 @@ public class ClassInfoController {
      * 获取教师的班级列表
      */
     @GetMapping("/list")
+    @RequireRole({1})  // 仅教师
     public Result<List<ClassInfo>> getClassList(HttpServletRequest request) {
         Long teacherId = (Long) request.getAttribute("userId");
         if (teacherId == null) {
@@ -51,12 +56,16 @@ public class ClassInfoController {
      * 创建班级
      */
     @PostMapping("/create")
+    @RequireRole({1, 2})  // 教师和管理员
     public Result<Void> createClass(@RequestBody ClassInfo classInfo, HttpServletRequest request) {
-        Long teacherId = (Long) request.getAttribute("userId");
-        if (teacherId == null) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
             return Result.error(401, "未登录");
         }
-        classInfo.setTeacherId(teacherId);
+        // 如果没有指定教师ID，则使用当前用户ID
+        if (classInfo.getTeacherId() == null || classInfo.getTeacherId() == 0) {
+            classInfo.setTeacherId(userId);
+        }
         classInfoService.createClass(classInfo);
         return Result.success("创建成功", null);
     }
@@ -65,6 +74,7 @@ public class ClassInfoController {
      * 更新班级
      */
     @PutMapping("/{id}")
+    @RequireRole({1, 2})  // 教师和管理员
     public Result<Void> updateClass(@PathVariable Long id, @RequestBody ClassInfo classInfo) {
         classInfo.setId(id);
         classInfoService.updateClass(classInfo);
@@ -75,6 +85,7 @@ public class ClassInfoController {
      * 删除班级
      */
     @DeleteMapping("/{id}")
+    @RequireRole({1, 2})  // 教师和管理员
     public Result<Void> deleteClass(@PathVariable Long id) {
         classInfoService.deleteClass(id);
         return Result.success("删除成功", null);
@@ -84,6 +95,7 @@ public class ClassInfoController {
      * 获取班级详情（含学生列表）
      */
     @GetMapping("/{id}")
+    @RequireRole({1, 2})  // 教师和管理员
     public Result<Map<String, Object>> getClassDetail(@PathVariable Long id) {
         Map<String, Object> detail = classInfoService.getClassDetail(id);
         return Result.success(detail);
@@ -93,6 +105,7 @@ public class ClassInfoController {
      * 添加学生到班级
      */
     @PostMapping("/{classId}/students")
+    @RequireRole({1})  // 仅教师
     public Result<Void> addStudents(@PathVariable Long classId, @RequestBody List<Long> studentIds) {
         classStudentService.addStudentsToClass(classId, studentIds);
         return Result.success("添加成功", null);
@@ -102,6 +115,7 @@ public class ClassInfoController {
      * 从班级移除学生
      */
     @DeleteMapping("/{classId}/students/{studentId}")
+    @RequireRole({1})  // 仅教师
     public Result<Void> removeStudent(@PathVariable Long classId, @PathVariable Long studentId) {
         classStudentService.removeStudentFromClass(classId, studentId);
         return Result.success("移除成功", null);
@@ -111,6 +125,7 @@ public class ClassInfoController {
      * 获取班级学生ID列表
      */
     @GetMapping("/{classId}/student-ids")
+    @RequireRole({1, 2})  // 教师和管理员
     public Result<List<Long>> getStudentIds(@PathVariable Long classId) {
         List<Long> studentIds = classStudentService.getStudentIdsByClass(classId);
         return Result.success(studentIds);

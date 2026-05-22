@@ -24,6 +24,7 @@ CREATE TABLE sys_user (
     phone           VARCHAR(20)  DEFAULT NULL COMMENT '手机号',
     email           VARCHAR(100) DEFAULT NULL COMMENT '邮箱',
     class_name      VARCHAR(100) DEFAULT NULL COMMENT '班级',
+    avatar          LONGTEXT      DEFAULT NULL COMMENT '头像(base64或URL)',
     role            TINYINT      NOT NULL DEFAULT 0 COMMENT '角色: 0-学生, 1-教师, 2-管理员',
     status          TINYINT      NOT NULL DEFAULT 1 COMMENT '状态: 0-禁用, 1-正常',
     create_time     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -39,6 +40,7 @@ CREATE TABLE sys_user (
 DROP TABLE IF EXISTS question_bank;
 CREATE TABLE question_bank (
     id               BIGINT        NOT NULL COMMENT '题目ID (雪花算法)',
+    teacher_id       BIGINT        DEFAULT NULL COMMENT '创建教师ID (NULL表示公共题目)',
     subject_name     VARCHAR(50)   NOT NULL COMMENT '科目名称',
     type             TINYINT       NOT NULL COMMENT '题型: 1-单选, 2-多选, 3-判断, 4-主观题',
     content          TEXT          NOT NULL COMMENT '题目正文 (含选项JSON)',
@@ -50,6 +52,7 @@ CREATE TABLE question_bank (
     update_time      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted          TINYINT       NOT NULL DEFAULT 0 COMMENT '逻辑删除: 0-未删除, 1-已删除',
     PRIMARY KEY (id),
+    KEY idx_teacher_id (teacher_id),
     KEY idx_subject_type (subject_name, type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='题库表';
 
@@ -180,15 +183,17 @@ CREATE TABLE paper_class (
 
 -- =====================================================
 -- 测试数据
+-- 注意：密码已使用 BCrypt 加密
+-- 原始密码: teacher/123456, student/123456, admin/admin123
 -- =====================================================
 
 -- 用户测试数据
 INSERT INTO sys_user (id, username, password, real_name, role, status) VALUES
-(1001, 'teacher', '123456', '张老师', 1, 1),
-(1002, 'student', '123456', '李同学', 0, 1),
-(1003, 'admin', 'admin123', '系统管理员', 2, 1),
-(1004, 'student2', '123456', '王同学', 0, 1),
-(1005, 'student3', '123456', '赵同学', 0, 1);
+(1001, 'teacher', '$2a$10$hsdPocSo4CC3kMJr.lv/9ucScFWHD7paQA9g/S6/GkW4Th2MXgbz.', '张老师', 1, 1),
+(1002, 'student', '$2a$10$hsdPocSo4CC3kMJr.lv/9ucScFWHD7paQA9g/S6/GkW4Th2MXgbz.', '李同学', 0, 1),
+(1003, 'admin', '$2a$10$I9ur6Vv2/TeEJlIvleiwvOLJlPWUnm9xD5mO04iButAgAlt1tgOVm', '系统管理员', 2, 1),
+(1004, 'student2', '$2a$10$hsdPocSo4CC3kMJr.lv/9ucScFWHD7paQA9g/S6/GkW4Th2MXgbz.', '王同学', 0, 1),
+(1005, 'student3', '$2a$10$hsdPocSo4CC3kMJr.lv/9ucScFWHD7paQA9g/S6/GkW4Th2MXgbz.', '赵同学', 0, 1);
 
 -- 班级测试数据
 INSERT INTO class_info (id, class_name, teacher_id, description) VALUES

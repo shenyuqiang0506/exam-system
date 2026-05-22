@@ -17,6 +17,9 @@ public class QuestionBank {
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
+    /** 创建教师ID (NULL表示公共题目) */
+    private Long teacherId;
+
     /** 科目名称 */
     private String subjectName;
 

@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 考试记录 Service 实现类
@@ -113,9 +114,13 @@ public class ExamRecordServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRec
                 BigDecimal questionScore = question.getScore();
 
                 if (questionType <= 3) {
-                    // 客观题：精确匹配
-                    if (standardAnswer != null && standardAnswer.equalsIgnoreCase(answerText)) {
-                        score = questionScore;
+                    // 客观题：精确匹配（多选题排序后比较）
+                    if (standardAnswer != null) {
+                        String sortedStandard = sortAnswer(standardAnswer);
+                        String sortedStudent = sortAnswer(answerText);
+                        if (sortedStandard.equalsIgnoreCase(sortedStudent)) {
+                            score = questionScore;
+                        }
                     }
                     objectiveScore = objectiveScore.add(score);
                 } else {
@@ -247,5 +252,20 @@ public class ExamRecordServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRec
         result.put("record", record);
         result.put("details", detailList);
         return result;
+    }
+
+    /**
+     * 对答案字符串排序（用于多选题比较）
+     * 例如 "ACB" -> "ABC", "C,A,B" -> "A,B,C"
+     */
+    private String sortAnswer(String answer) {
+        if (answer == null || answer.isEmpty()) {
+            return "";
+        }
+        // 移除空格和逗号
+        String cleaned = answer.replaceAll("[,\\s]", "");
+        char[] chars = cleaned.toUpperCase().toCharArray();
+        Arrays.sort(chars);
+        return new String(chars);
     }
 }

@@ -32,7 +32,8 @@ public class UserController {
         SysUser user = sysUserService.login(loginDTO.getUsername(), loginDTO.getPassword());
 
         // 生成 JWT Token
-        String token = jwtUtils.generateToken(user.getId(), user.getRole() == 1 ? "teacher" : "student");
+        String roleStr = user.getRole() == 2 ? "admin" : (user.getRole() == 1 ? "teacher" : "student");
+        String token = jwtUtils.generateToken(user.getId(), roleStr);
 
         Map<String, Object> data = new HashMap<>();
         data.put("token", token);
@@ -64,6 +65,43 @@ public class UserController {
     }
 
     /**
+     * 获取当前用户信息
+     */
+    @GetMapping("/profile")
+    public Result<SysUser> getProfile(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return Result.error(401, "未登录");
+        }
+        SysUser user = sysUserService.getById(userId);
+        if (user != null) {
+            user.setPassword(null); // 不返回密码
+        }
+        return Result.success(user);
+    }
+
+    /**
+     * 更新个人信息
+     */
+    @PutMapping("/profile")
+    public Result<Void> updateProfile(@RequestBody UpdateProfileDTO dto, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return Result.error(401, "未登录");
+        }
+        SysUser user = sysUserService.getById(userId);
+        if (user == null) {
+            return Result.error("用户不存在");
+        }
+        if (dto.getRealName() != null) user.setRealName(dto.getRealName());
+        if (dto.getPhone() != null) user.setPhone(dto.getPhone());
+        if (dto.getEmail() != null) user.setEmail(dto.getEmail());
+        if (dto.getAvatar() != null) user.setAvatar(dto.getAvatar());
+        sysUserService.updateById(user);
+        return Result.success("更新成功", null);
+    }
+
+    /**
      * 修改密码 DTO
      */
     public static class ChangePasswordDTO {
@@ -87,5 +125,24 @@ public class UserController {
         public void setUsername(String username) { this.username = username; }
         public String getPassword() { return password; }
         public void setPassword(String password) { this.password = password; }
+    }
+
+    /**
+     * 更新个人信息 DTO
+     */
+    public static class UpdateProfileDTO {
+        private String realName;
+        private String phone;
+        private String email;
+        private String avatar;
+
+        public String getRealName() { return realName; }
+        public void setRealName(String realName) { this.realName = realName; }
+        public String getPhone() { return phone; }
+        public void setPhone(String phone) { this.phone = phone; }
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+        public String getAvatar() { return avatar; }
+        public void setAvatar(String avatar) { this.avatar = avatar; }
     }
 }

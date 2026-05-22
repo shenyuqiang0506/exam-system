@@ -17,6 +17,7 @@ import com.shen.examsystem.service.ExamPaperService;
 import com.shen.examsystem.service.ExamRecordService;
 import com.shen.examsystem.service.GeneticAlgorithmService;
 import com.shen.examsystem.service.PaperClassService;
+import com.shen.examsystem.interceptor.RequireRole;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,9 +52,10 @@ public class ExamPaperController {
     private PaperQuestionMapper paperQuestionMapper;
 
     /**
-     * 分页查询试卷列表
+     * 分页查询试卷列表（教师）
      */
     @GetMapping("/page")
+    @RequireRole({1, 2})  // 教师或管理员
     public Result<Page<ExamPaper>> page(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
@@ -74,6 +76,7 @@ public class ExamPaperController {
      */
     @PostMapping("/auto-create")
     @Transactional(rollbackFor = Exception.class)
+    @RequireRole({1})  // 仅教师
     public Result<Long> autoCreate(@RequestBody PaperRuleDTO rule) {
         // 调试日志
         System.out.println("接收到的组卷规则: title=" + rule.getTitle() 
@@ -123,6 +126,7 @@ public class ExamPaperController {
      * 手动组卷保存
      */
     @PostMapping("/manual-create")
+    @RequireRole({1})  // 仅教师
     public Result<String> manualCreate(@RequestBody ManualCreateDTO dto) {
         examPaperService.manualCreatePaper(dto.getPaper(), dto.getQuestionIds());
 
@@ -138,6 +142,7 @@ public class ExamPaperController {
      * 试卷归档
      */
     @PutMapping("/archive/{id}")
+    @RequireRole({1})  // 仅教师
     public Result<String> archive(@PathVariable Long id) {
         examPaperService.archivePaper(id);
         return Result.success("归档成功", null);
@@ -147,6 +152,7 @@ public class ExamPaperController {
      * 删除试卷
      */
     @DeleteMapping("/{id}")
+    @RequireRole({1})  // 仅教师
     public Result<Void> delete(@PathVariable Long id) {
         examPaperService.deletePaper(id);
         return Result.success("删除成功", null);
