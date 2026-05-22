@@ -135,7 +135,28 @@ const handleArchive = async (id) => {
   catch { ElMessage.error('归档失败') }
 }
 
-const exportScore = (id) => window.open(`http://localhost:8080/api/record/export/${id}`)
+const exportScore = async (paperId) => {
+  try {
+    const res = await request.get(`/api/record/export/${paperId}`, {
+      responseType: 'blob'
+    })
+    const blob = new Blob([res.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    const paper = paperList.value.find(p => p.id === paperId)
+    link.download = `${paper?.title || '成绩表'}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch {
+    ElMessage.error('导出失败')
+  }
+}
 
 const viewDetail = async (row) => {
   try {

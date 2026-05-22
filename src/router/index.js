@@ -13,6 +13,12 @@ const router = createRouter({
             component: () => import('@/views/LoginView.vue'),
             meta: {title: '登录'}
         },
+        {
+            path: '/profile',
+            name: 'profile',
+            component: () => import('@/views/ProfileView.vue'),
+            meta: {title: '个人信息', requiresAuth: true}
+        },
 
         // ========== 教师端路由 ==========
         {
@@ -124,14 +130,32 @@ const router = createRouter({
         {
             path: '/admin',
             component: () => import('@/views/admin/AdminLayout.vue'),
-            redirect: '/admin/students',
+            redirect: '/admin/dashboard',
             meta: {requiresAuth: true, role: 2},
             children: [
+                {
+                    path: 'dashboard',
+                    name: 'AdminDashboard',
+                    component: () => import('@/views/admin/AdminDashboard.vue'),
+                    meta: {title: '管理后台'}
+                },
                 {
                     path: 'students',
                     name: 'AdminStudentManage',
                     component: () => import('@/views/admin/StudentManage.vue'),
                     meta: {title: '学生管理'}
+                },
+                {
+                    path: 'teachers',
+                    name: 'AdminTeacherManage',
+                    component: () => import('@/views/admin/TeacherManage.vue'),
+                    meta: {title: '教师管理'}
+                },
+                {
+                    path: 'classes',
+                    name: 'AdminClassManage',
+                    component: () => import('@/views/admin/ClassManage.vue'),
+                    meta: {title: '班级管理'}
                 },
                 {
                     path: 'import',

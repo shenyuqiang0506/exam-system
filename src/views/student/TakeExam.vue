@@ -202,10 +202,31 @@ const loadExamData = async () => {
     if (res.data?.ongoingRecord) {
       recordId.value = res.data.ongoingRecord.id
       ElMessage.info('继续上次考试')
+
+      // 恢复已保存的答案
+      if (res.data.ongoingRecord.answers) {
+        try {
+          const savedAnswers = JSON.parse(res.data.ongoingRecord.answers)
+          Object.assign(answers, savedAnswers)
+        } catch (e) {
+          console.warn('恢复答案失败:', e)
+        }
+      }
     }
 
     paperInfo.title = res.data.paper.title
     paperInfo.totalScore = res.data.paper.totalScore
+
+    // 根据试卷结束时间计算剩余秒数
+    if (res.data.paper.endTime) {
+      const endTime = new Date(res.data.paper.endTime).getTime()
+      const now = Date.now()
+      const diff = Math.floor((endTime - now) / 1000)
+      remainingSeconds.value = Math.max(0, diff)
+    } else {
+      // 没有设置结束时间，默认120分钟
+      remainingSeconds.value = 7200
+    }
 
     questions.value = (res.data.questions || []).map(q => {
       let displayContent = q.content

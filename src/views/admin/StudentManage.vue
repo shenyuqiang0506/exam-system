@@ -105,7 +105,7 @@ const loadStudents = async () => {
       }
     })
     students.value = res.data.records
-    pagination.total = res.data.total
+    pagination.total = Number(res.data.total) || 0
   } catch {
     ElMessage.error('加载失败')
   } finally {

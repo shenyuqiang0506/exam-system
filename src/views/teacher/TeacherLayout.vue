@@ -73,14 +73,21 @@
         <div class="header-right">
           <el-dropdown @command="handleCommand">
             <span class="user-info">
-              <el-avatar :size="32" :icon="UserFilled"/>
-              <span class="username">{{ userStore.userInfo.username || '教师' }}</span>
+              <el-avatar :size="32" :src="userStore.userInfo.avatar" :icon="UserFilled"/>
+              <span class="username">{{ userStore.userInfo.realName || userStore.userInfo.username || '教师' }}</span>
               <el-icon><ArrowDown/></el-icon>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="changePassword">修改密码</el-dropdown-item>
-                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+                <el-dropdown-item command="profile">
+                  <el-icon><User /></el-icon>个人信息
+                </el-dropdown-item>
+                <el-dropdown-item command="changePassword">
+                  <el-icon><Lock /></el-icon>修改密码
+                </el-dropdown-item>
+                <el-dropdown-item command="logout" divided>
+                  <el-icon><SwitchButton /></el-icon>退出登录
+                </el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -104,7 +111,7 @@ import {useRoute, useRouter} from 'vue-router'
 import {ElMessageBox} from 'element-plus'
 import {
   School, Odometer, Document, Files, MagicStick,
-  DataAnalysis, UserFilled, ArrowDown, EditPen, User
+  DataAnalysis, UserFilled, ArrowDown, EditPen, User, Lock, SwitchButton
 } from '@element-plus/icons-vue'
 import {useUserStore} from '@/stores/user'
 import ChangePassword from '@/components/ChangePassword.vue'
@@ -139,6 +146,8 @@ const handleCommand = async (command) => {
     })
     userStore.clearUser()
     router.push('/login')
+  } else if (command === 'profile') {
+    router.push('/profile')
   } else if (command === 'changePassword') {
     showChangePassword.value = true
   }

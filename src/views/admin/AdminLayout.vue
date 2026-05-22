@@ -24,6 +24,10 @@
           <el-icon><UserFilled /></el-icon>
           <span>教师管理</span>
         </el-menu-item>
+        <el-menu-item index="/admin/classes">
+          <el-icon><School /></el-icon>
+          <span>班级管理</span>
+        </el-menu-item>
         <el-menu-item index="/admin/import">
           <el-icon><Upload /></el-icon>
           <span>批量导入</span>
@@ -42,13 +46,18 @@
         <div class="header-right">
           <el-dropdown @command="handleCommand">
             <span class="user-info">
-              <el-avatar :size="32" :icon="UserFilled" />
-              <span class="username">{{ userStore.userInfo.username || '管理员' }}</span>
+              <el-avatar :size="32" :src="userStore.userInfo.avatar" :icon="UserFilled" />
+              <span class="username">{{ userStore.userInfo.realName || userStore.userInfo.username || '管理员' }}</span>
               <el-icon><ArrowDown /></el-icon>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+                <el-dropdown-item command="profile">
+                  <el-icon><User /></el-icon>个人信息
+                </el-dropdown-item>
+                <el-dropdown-item command="logout" divided>
+                  <el-icon><SwitchButton /></el-icon>退出登录
+                </el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -66,7 +75,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
-import { Setting, Odometer, User, UserFilled, Upload, ArrowDown } from '@element-plus/icons-vue'
+import { Setting, Odometer, User, UserFilled, Upload, ArrowDown, SwitchButton } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
@@ -94,6 +103,8 @@ const handleCommand = async (command) => {
     })
     userStore.clearUser()
     router.push('/login')
+  } else if (command === 'profile') {
+    router.push('/profile')
   }
 }
 </script>
