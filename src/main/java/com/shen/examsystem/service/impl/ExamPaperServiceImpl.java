@@ -10,6 +10,7 @@ import com.shen.examsystem.mapper.ExamPaperMapper;
 import com.shen.examsystem.mapper.PaperQuestionMapper;
 import com.shen.examsystem.service.ExamPaperService;
 import com.shen.examsystem.service.ExamRecordService;
+import com.shen.examsystem.service.PaperClassService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,9 @@ public class ExamPaperServiceImpl extends ServiceImpl<ExamPaperMapper, ExamPaper
 
     @Autowired
     private ExamRecordService examRecordService;
+
+    @Autowired
+    private PaperClassService paperClassService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -79,6 +83,9 @@ public class ExamPaperServiceImpl extends ServiceImpl<ExamPaperMapper, ExamPaper
     public List<Map<String, Object>> getActivePapersForStudent(Long studentId) {
         LocalDateTime now = LocalDateTime.now();
 
+        // 获取学生可访问的试卷ID列表
+        List<Long> accessiblePaperIds = paperClassService.getAccessiblePaperIds(studentId);
+
         // 查询活跃的试卷：没有时间限制 OR 当前时间在开始和结束时间之间
         LambdaQueryWrapper<ExamPaper> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ExamPaper::getIsArchived, 0)
@@ -87,20 +94,33 @@ public class ExamPaperServiceImpl extends ServiceImpl<ExamPaperMapper, ExamPaper
                    .or()
                    .le(ExamPaper::getStartTime, now)  // 已开始
                    .ge(ExamPaper::getEndTime, now)    // 未结束
-               )
-               .orderByDesc(ExamPaper::getCreateTime);
+               );
 
+        // 如果学生在某些班级中，只显示分配给这些班级的试卷
+        if (!accessiblePaperIds.isEmpty()) {
+            wrapper.in(ExamPaper::getId, accessiblePaperIds);
+        }
+
+        wrapper.orderByDesc(ExamPaper::getCreateTime);
         List<ExamPaper> papers = this.list(wrapper);
         return buildPaperListWithStatus(papers, studentId);
     }
 
     @Override
     public java.util.Map<String, Object> getAllPapersForStudent(Long studentId, Integer page, Integer size) {
+        // 获取学生可访问的试卷ID列表
+        List<Long> accessiblePaperIds = paperClassService.getAccessiblePaperIds(studentId);
+
         // 使用 MyBatis-Plus 分页
         Page<ExamPaper> pageParam = new Page<>(page, size);
         LambdaQueryWrapper<ExamPaper> wrapper = new LambdaQueryWrapper<>();
-        wrapper.orderByDesc(ExamPaper::getCreateTime);
 
+        // 如果学生在某些班级中，只显示分配给这些班级的试卷
+        if (!accessiblePaperIds.isEmpty()) {
+            wrapper.in(ExamPaper::getId, accessiblePaperIds);
+        }
+
+        wrapper.orderByDesc(ExamPaper::getCreateTime);
         Page<ExamPaper> pageResult = this.page(pageParam, wrapper);
 
         // 构建带状态信息的试卷列表

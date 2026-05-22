@@ -1,0 +1,508 @@
+{
+	"info": {
+		"name": "在线考试系统 API",
+		"description": "Spring Boot 3 + Vue 3 在线考试系统后端接口集合",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "用户认证",
+			"item": [
+				{
+					"name": "用户登录",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"teacher\",\n    \"password\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/user/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "user", "login"]
+						},
+						"description": "用户登录获取JWT令牌"
+					},
+					"response": []
+				},
+				{
+					"name": "用户注册",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"newstudent\",\n    \"password\": \"password123\",\n    \"role\": 0\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/user/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "user", "register"]
+						},
+						"description": "用户注册（role: 0-学生, 1-教师）"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "题库管理",
+			"item": [
+				{
+					"name": "分页查询题目",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/question/page?page=1&size=10&subjectName=数据结构&type=1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "question", "page"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "subjectName",
+									"value": "数据结构"
+								},
+								{
+									"key": "type",
+									"value": "1"
+								}
+							]
+						},
+						"description": "分页查询题目（type: 1-单选, 2-多选, 3-判断, 4-主观）"
+					},
+					"response": []
+				},
+				{
+					"name": "获取所有科目",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/question/subjects",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "question", "subjects"]
+						},
+						"description": "获取所有科目列表"
+					},
+					"response": []
+				},
+				{
+					"name": "保存题目",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subjectName\": \"数据结构\",\n    \"type\": 1,\n    \"content\": \"以下哪个是线性结构？\\nA. 树\\nB. 图\\nC. 栈\\nD. 集合\",\n    \"standardAnswer\": \"C\",\n    \"score\": 2,\n    \"difficulty\": 0.3\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/question/save",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "question", "save"]
+						},
+						"description": "新增或修改题目（有id则修改，无id则新增）"
+					},
+					"response": []
+				},
+				{
+					"name": "删除题目",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/question/1001",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "question", "1001"]
+						},
+						"description": "根据ID删除题目"
+					},
+					"response": []
+				},
+				{
+					"name": "导入题目（Excel）",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/question/import",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "question", "import"]
+						},
+						"description": "通过Excel文件批量导入题目"
+					},
+					"response": []
+				},
+				{
+					"name": "下载导入模板",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/question/template",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "question", "template"]
+						},
+						"description": "下载题目导入Excel模板"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "试卷管理",
+			"item": [
+				{
+					"name": "分页查询试卷",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/paper/page?page=1&size=10&subjectName=数据结构",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "paper", "page"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "subjectName",
+									"value": "数据结构"
+								}
+							]
+						},
+						"description": "分页查询试卷列表"
+					},
+					"response": []
+				},
+				{
+					"name": "智能组卷",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subjectName\": \"数据结构\",\n    \"targetDifficulty\": 0.5,\n    \"totalScore\": 100,\n    \"singleChoiceCount\": 10,\n    \"singleChoiceScore\": 2,\n    \"multiChoiceCount\": 5,\n    \"multiChoiceScore\": 4,\n    \"subjectiveCount\": 3,\n    \"subjectiveScore\": 10\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/paper/auto-create",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "paper", "auto-create"]
+						},
+						"description": "使用遗传算法智能组卷"
+					},
+					"response": []
+				},
+				{
+					"name": "手动组卷",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"paper\": {\n        \"title\": \"数据结构期末试卷\",\n        \"subjectName\": \"数据结构\",\n        \"totalScore\": 100,\n        \"targetDifficulty\": 0.5\n    },\n    \"questionIds\": [1001, 1002, 1003, 1004, 1005]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/paper/manual-create",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "paper", "manual-create"]
+						},
+						"description": "手动选择题目组卷"
+					},
+					"response": []
+				},
+				{
+					"name": "归档试卷",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/paper/archive/1001",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "paper", "archive", "1001"]
+						},
+						"description": "将试卷归档（学生不可见）"
+					},
+					"response": []
+				},
+				{
+					"name": "获取可考试卷列表",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/paper/list-active",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "paper", "list-active"]
+						},
+						"description": "学生获取当前可参加的试卷列表"
+					},
+					"response": []
+				},
+				{
+					"name": "获取试卷详情",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/paper/detail/1001",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "paper", "detail", "1001"]
+						},
+						"description": "获取试卷详细信息（含题目ID列表）"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "考试记录",
+			"item": [
+				{
+					"name": "提交试卷（交卷）",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"paperId\": 1001,\n    \"answers\": [\n        {\n            \"questionId\": 1001,\n            \"answer\": \"C\"\n        },\n        {\n            \"questionId\": 1002,\n            \"answer\": \"A,C\"\n        },\n        {\n            \"questionId\": 1003,\n            \"answer\": \"二叉树的遍历方式包括前序遍历、中序遍历和后序遍历\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/record/submit",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "record", "submit"]
+						},
+						"description": "学生提交试卷答案（自动计算客观题分数，NLP计算主观题分数）"
+					},
+					"response": []
+				},
+				{
+					"name": "获取我的考试记录",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/record/my-records",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "record", "my-records"]
+						},
+						"description": "获取当前学生的所有考试记录"
+					},
+					"response": []
+				},
+				{
+					"name": "获取成绩详情",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/record/detail/1001",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "record", "detail", "1001"]
+						},
+						"description": "获取单次考试的详细成绩（含主观题AI判分依据）"
+					},
+					"response": []
+				},
+				{
+					"name": "获取试卷的所有考试记录",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/record/list/1001",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "record", "list", "1001"]
+						},
+						"description": "教师查看某试卷的所有学生考试记录"
+					},
+					"response": []
+				},
+				{
+					"name": "导出成绩（Excel）",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/record/export/1001",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "record", "export", "1001"]
+						},
+						"description": "导出指定试卷的成绩为Excel文件"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "统计分析",
+			"item": [
+				{
+					"name": "获取仪表盘数据",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/statistics/dashboard",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "statistics", "dashboard"]
+						},
+						"description": "获取教师仪表盘统计数据"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "your_jwt_token_here",
+			"type": "string"
+		}
+	]
+}

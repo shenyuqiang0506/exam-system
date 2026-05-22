@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 组卷规则 DTO
@@ -46,4 +47,7 @@ public class PaperRuleDTO {
     /** 考试结束时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime endTime;
+
+    /** 分配的班级ID列表 */
+    private List<Long> classIds;
 }

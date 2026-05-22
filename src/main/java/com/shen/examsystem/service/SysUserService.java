@@ -2,6 +2,9 @@ package com.shen.examsystem.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.shen.examsystem.entity.SysUser;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * 用户 Service 接口
@@ -29,4 +32,17 @@ public interface SysUserService extends IService<SysUser> {
      * @param newPassword 新密码
      */
     void changePassword(Long userId, String oldPassword, String newPassword);
+
+    /**
+     * 批量导入学生
+     * @param file Excel文件
+     * @return 导入结果
+     */
+    String importStudents(MultipartFile file);
+
+    /**
+     * 下载导入模板
+     * @return 模板数据
+     */
+    List<List<String>> getImportTemplate();
 }

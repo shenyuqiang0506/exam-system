@@ -10,9 +10,13 @@ import com.shen.examsystem.entity.PaperQuestion;
 import com.shen.examsystem.mapper.PaperQuestionMapper;
 import com.shen.examsystem.mapper.QuestionBankMapper;
 import com.shen.examsystem.entity.ExamRecord;
+import com.shen.examsystem.entity.PaperQuestion;
+import com.shen.examsystem.mapper.PaperQuestionMapper;
+import com.shen.examsystem.mapper.QuestionBankMapper;
 import com.shen.examsystem.service.ExamPaperService;
 import com.shen.examsystem.service.ExamRecordService;
 import com.shen.examsystem.service.GeneticAlgorithmService;
+import com.shen.examsystem.service.PaperClassService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +40,9 @@ public class ExamPaperController {
 
     @Autowired
     private GeneticAlgorithmService geneticAlgorithmService;
+
+    @Autowired
+    private PaperClassService paperClassService;
 
     @Autowired
     private QuestionBankMapper questionBankMapper;
@@ -104,6 +111,11 @@ public class ExamPaperController {
             paperQuestionMapper.insert(pq);
         }
 
+        // 5. 分配班级
+        if (rule.getClassIds() != null && !rule.getClassIds().isEmpty()) {
+            paperClassService.assignClassesToPaper(paper.getId(), rule.getClassIds());
+        }
+
         return Result.success("智能组卷成功", paper.getId());
     }
 
@@ -113,6 +125,12 @@ public class ExamPaperController {
     @PostMapping("/manual-create")
     public Result<String> manualCreate(@RequestBody ManualCreateDTO dto) {
         examPaperService.manualCreatePaper(dto.getPaper(), dto.getQuestionIds());
+
+        // 分配班级
+        if (dto.getClassIds() != null && !dto.getClassIds().isEmpty()) {
+            paperClassService.assignClassesToPaper(dto.getPaper().getId(), dto.getClassIds());
+        }
+
         return Result.success("组卷成功", null);
     }
 
@@ -246,10 +264,13 @@ public class ExamPaperController {
     public static class ManualCreateDTO {
         private ExamPaper paper;
         private List<Long> questionIds;
+        private List<Long> classIds;
 
         public ExamPaper getPaper() { return paper; }
         public void setPaper(ExamPaper paper) { this.paper = paper; }
         public List<Long> getQuestionIds() { return questionIds; }
         public void setQuestionIds(List<Long> questionIds) { this.questionIds = questionIds; }
+        public List<Long> getClassIds() { return classIds; }
+        public void setClassIds(List<Long> classIds) { this.classIds = classIds; }
     }
 }

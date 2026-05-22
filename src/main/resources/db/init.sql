@@ -19,7 +19,13 @@ CREATE TABLE sys_user (
     id              BIGINT       NOT NULL COMMENT '用户ID (雪花算法)',
     username        VARCHAR(50)  NOT NULL COMMENT '登录账号',
     password        VARCHAR(255) NOT NULL COMMENT '密码 (BCrypt加密)',
-    role            TINYINT      NOT NULL DEFAULT 0 COMMENT '角色: 0-学生, 1-教师',
+    real_name       VARCHAR(50)  DEFAULT NULL COMMENT '真实姓名',
+    student_no      VARCHAR(50)  DEFAULT NULL COMMENT '学号',
+    phone           VARCHAR(20)  DEFAULT NULL COMMENT '手机号',
+    email           VARCHAR(100) DEFAULT NULL COMMENT '邮箱',
+    class_name      VARCHAR(100) DEFAULT NULL COMMENT '班级',
+    role            TINYINT      NOT NULL DEFAULT 0 COMMENT '角色: 0-学生, 1-教师, 2-管理员',
+    status          TINYINT      NOT NULL DEFAULT 1 COMMENT '状态: 0-禁用, 1-正常',
     create_time     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted         TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除: 0-未删除, 1-已删除',
@@ -121,15 +127,80 @@ CREATE TABLE answer_detail (
     KEY idx_record_question (record_id, question_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='答题明细表';
 
+-- -------------------------------------------------
+-- 7. 班级表 (class_info)
+-- -------------------------------------------------
+DROP TABLE IF EXISTS class_info;
+CREATE TABLE class_info (
+    id              BIGINT       NOT NULL COMMENT '班级ID (雪花算法)',
+    class_name      VARCHAR(100) NOT NULL COMMENT '班级名称',
+    teacher_id      BIGINT       NOT NULL COMMENT '教师ID',
+    description     VARCHAR(500) DEFAULT NULL COMMENT '班级描述',
+    create_time     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted         TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除: 0-未删除, 1-已删除',
+    PRIMARY KEY (id),
+    KEY idx_teacher_id (teacher_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='班级表';
+
+-- -------------------------------------------------
+-- 8. 班级-学生关联表 (class_student)
+-- -------------------------------------------------
+DROP TABLE IF EXISTS class_student;
+CREATE TABLE class_student (
+    id              BIGINT   NOT NULL COMMENT '关联ID (雪花算法)',
+    class_id        BIGINT   NOT NULL COMMENT '班级ID',
+    student_id      BIGINT   NOT NULL COMMENT '学生ID',
+    join_time       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '加入时间',
+    create_time     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted         TINYINT  NOT NULL DEFAULT 0 COMMENT '逻辑删除: 0-未删除, 1-已删除',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_class_student (class_id, student_id),
+    KEY idx_class_id (class_id),
+    KEY idx_student_id (student_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='班级学生关联表';
+
+-- -------------------------------------------------
+-- 9. 试卷-班级关联表 (paper_class)
+-- -------------------------------------------------
+DROP TABLE IF EXISTS paper_class;
+CREATE TABLE paper_class (
+    id              BIGINT   NOT NULL COMMENT '关联ID (雪花算法)',
+    paper_id        BIGINT   NOT NULL COMMENT '试卷ID',
+    class_id        BIGINT   NOT NULL COMMENT '班级ID',
+    create_time     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted         TINYINT  NOT NULL DEFAULT 0 COMMENT '逻辑删除: 0-未删除, 1-已删除',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_paper_class (paper_id, class_id),
+    KEY idx_paper_id (paper_id),
+    KEY idx_class_id (class_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='试卷班级关联表';
+
 -- =====================================================
 -- 测试数据
 -- =====================================================
 
 -- 用户测试数据
-INSERT INTO sys_user (id, username, password, role) VALUES
-(1001, 'teacher', '123456', 1),
-(1002, 'student', '123456', 0),
-(1003, 'admin', 'admin123', 1);
+INSERT INTO sys_user (id, username, password, real_name, role, status) VALUES
+(1001, 'teacher', '123456', '张老师', 1, 1),
+(1002, 'student', '123456', '李同学', 0, 1),
+(1003, 'admin', 'admin123', '系统管理员', 2, 1),
+(1004, 'student2', '123456', '王同学', 0, 1),
+(1005, 'student3', '123456', '赵同学', 0, 1);
+
+-- 班级测试数据
+INSERT INTO class_info (id, class_name, teacher_id, description) VALUES
+(2001, 'Java程序设计2024春季班', 1001, 'Java程序设计课程班级'),
+(2002, '数据结构2024春季班', 1001, '数据结构课程班级');
+
+-- 班级学生关联测试数据
+INSERT INTO class_student (id, class_id, student_id) VALUES
+(3001, 2001, 1002),
+(3002, 2001, 1004),
+(3003, 2002, 1002),
+(3004, 2002, 1005);
 
 -- =====================================================
 -- 题库样本数据 (100 条)

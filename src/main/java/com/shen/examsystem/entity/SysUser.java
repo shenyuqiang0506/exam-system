@@ -22,8 +22,26 @@ public class SysUser {
     /** 密码 (BCrypt加密) */
     private String password;
 
-    /** 角色: 0-学生, 1-教师 */
+    /** 真实姓名 */
+    private String realName;
+
+    /** 学号 */
+    private String studentNo;
+
+    /** 手机号 */
+    private String phone;
+
+    /** 邮箱 */
+    private String email;
+
+    /** 班级 */
+    private String className;
+
+    /** 角色: 0-学生, 1-教师, 2-管理员 */
     private Integer role;
+
+    /** 状态: 0-禁用, 1-正常 */
+    private Integer status;
 
     /** 创建时间 */
     @TableField(fill = FieldFill.INSERT)
