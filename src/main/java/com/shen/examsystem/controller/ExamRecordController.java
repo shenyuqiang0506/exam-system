@@ -28,6 +28,30 @@ public class ExamRecordController {
     private ExamRecordService examRecordService;
 
     /**
+     * 检查学生对某试卷的考试状态
+     */
+    @GetMapping("/check/{paperId}")
+    public Result<ExamRecord> checkExamStatus(@PathVariable Long paperId, HttpServletRequest request) {
+        Long studentId = (Long) request.getAttribute("userId");
+        if (studentId == null) {
+            return Result.error(401, "未登录");
+        }
+
+        // 查询该学生对该试卷的最新考试记录
+        ExamRecord ongoing = examRecordService.getOngoingExam(studentId, paperId);
+        if (ongoing != null) {
+            return Result.success("有正在进行的考试", ongoing);
+        }
+
+        // 检查是否已完成考试
+        if (examRecordService.hasCompletedExam(studentId, paperId)) {
+            return Result.error(403, "您已完成该试卷考试，不可重复参加");
+        }
+
+        return Result.success("可以参加考试", null);
+    }
+
+    /**
      * 提交试卷（交卷）
      */
     @PostMapping("/submit")
@@ -35,6 +59,11 @@ public class ExamRecordController {
         Long studentId = (Long) request.getAttribute("userId");
         if (studentId == null) {
             return Result.error(401, "未登录");
+        }
+
+        // 检查是否已交卷
+        if (examRecordService.hasCompletedExam(studentId, submitDTO.getPaperId())) {
+            return Result.error(403, "您已完成该试卷考试，不可重复交卷");
         }
 
         Long recordId = examRecordService.submitPaper(studentId, submitDTO.getPaperId(), submitDTO.getAnswers());

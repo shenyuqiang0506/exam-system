@@ -34,4 +34,19 @@ public interface ExamRecordService extends IService<ExamRecord> {
      * 获取记录详情
      */
     Map<String, Object> getRecordDetail(Long recordId);
+
+    /**
+     * 检查学生是否已完成某试卷考试
+     */
+    boolean hasCompletedExam(Long studentId, Long paperId);
+
+    /**
+     * 获取学生正在进行的考试记录
+     */
+    ExamRecord getOngoingExam(Long studentId, Long paperId);
+
+    /**
+     * 获取学生对某试卷的最新考试记录
+     */
+    ExamRecord getStudentRecord(Long studentId, Long paperId);
 }

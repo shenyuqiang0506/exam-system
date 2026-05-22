@@ -3,6 +3,11 @@
 -- MySQL 8.0+
 -- =====================================================
 
+SET NAMES utf8mb4;
+SET CHARACTER_SET_CLIENT = utf8mb4;
+SET CHARACTER_SET_CONNECTION = utf8mb4;
+SET CHARACTER_SET_RESULTS = utf8mb4;
+
 CREATE DATABASE IF NOT EXISTS exam_system DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE exam_system;
 
@@ -52,6 +57,8 @@ CREATE TABLE exam_paper (
     subject_name       VARCHAR(50)   NOT NULL COMMENT '科目名称',
     total_score        DECIMAL(6,1)  NOT NULL DEFAULT 100.0 COMMENT '试卷总分',
     target_difficulty  DECIMAL(2,1)  NOT NULL DEFAULT 0.5 COMMENT '期望平均难度系数',
+    start_time         DATETIME      DEFAULT NULL COMMENT '考试开始时间',
+    end_time           DATETIME      DEFAULT NULL COMMENT '考试结束时间',
     is_archived        TINYINT       NOT NULL DEFAULT 0 COMMENT '状态: 0-正常, 1-已归档',
     create_time        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

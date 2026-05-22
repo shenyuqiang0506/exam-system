@@ -29,6 +29,12 @@ public class ExamPaper {
     /** 期望平均难度系数 */
     private BigDecimal targetDifficulty;
 
+    /** 考试开始时间 */
+    private LocalDateTime startTime;
+
+    /** 考试结束时间 */
+    private LocalDateTime endTime;
+
     /** 状态: 0-正常, 1-已归档 */
     private Integer isArchived;
 

@@ -9,8 +9,11 @@ import com.shen.examsystem.entity.QuestionBank;
 import com.shen.examsystem.entity.PaperQuestion;
 import com.shen.examsystem.mapper.PaperQuestionMapper;
 import com.shen.examsystem.mapper.QuestionBankMapper;
+import com.shen.examsystem.entity.ExamRecord;
 import com.shen.examsystem.service.ExamPaperService;
+import com.shen.examsystem.service.ExamRecordService;
 import com.shen.examsystem.service.GeneticAlgorithmService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +30,9 @@ public class ExamPaperController {
 
     @Autowired
     private ExamPaperService examPaperService;
+
+    @Autowired
+    private ExamRecordService examRecordService;
 
     @Autowired
     private GeneticAlgorithmService geneticAlgorithmService;
@@ -62,6 +68,11 @@ public class ExamPaperController {
     @PostMapping("/auto-create")
     @Transactional(rollbackFor = Exception.class)
     public Result<Long> autoCreate(@RequestBody PaperRuleDTO rule) {
+        // 调试日志
+        System.out.println("接收到的组卷规则: title=" + rule.getTitle() 
+            + ", startTime=" + rule.getStartTime() 
+            + ", endTime=" + rule.getEndTime());
+        
         // 1. 查询该科目的所有候选题目
         LambdaQueryWrapper<QuestionBank> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(QuestionBank::getSubjectName, rule.getSubjectName());
@@ -72,10 +83,16 @@ public class ExamPaperController {
 
         // 3. 创建试卷
         ExamPaper paper = new ExamPaper();
-        paper.setTitle(rule.getSubjectName() + "-智能组卷");
+        // 使用用户提供的试卷名称，如果为空则使用默认名称
+        String title = (rule.getTitle() != null && !rule.getTitle().isEmpty()) 
+            ? rule.getTitle() 
+            : rule.getSubjectName() + "-智能组卷";
+        paper.setTitle(title);
         paper.setSubjectName(rule.getSubjectName());
         paper.setTotalScore(rule.getTotalScore());
         paper.setTargetDifficulty(rule.getTargetDifficulty());
+        paper.setStartTime(rule.getStartTime());
+        paper.setEndTime(rule.getEndTime());
         paper.setIsArchived(0);
         examPaperService.save(paper);
 
@@ -118,10 +135,62 @@ public class ExamPaperController {
     }
 
     /**
+     * 学生获取活跃题目集（进行中）
+     */
+    @GetMapping("/active")
+    public Result<List<java.util.Map<String, Object>>> getActivePapers(HttpServletRequest request) {
+        Long studentId = (Long) request.getAttribute("userId");
+        if (studentId == null) {
+            return Result.error(401, "未登录");
+        }
+        List<java.util.Map<String, Object>> papers = examPaperService.getActivePapersForStudent(studentId);
+        return Result.success(papers);
+    }
+
+    /**
+     * 学生获取所有题目集（分页）
+     */
+    @GetMapping("/all")
+    public Result<java.util.Map<String, Object>> getAllPapers(
+            HttpServletRequest request,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        Long studentId = (Long) request.getAttribute("userId");
+        if (studentId == null) {
+            return Result.error(401, "未登录");
+        }
+        java.util.Map<String, Object> result = examPaperService.getAllPapersForStudent(studentId, page, size);
+        return Result.success(result);
+    }
+
+    /**
      * 获取试卷详情（包含完整题目信息）
      */
     @GetMapping("/detail/{id}")
-    public Result<java.util.Map<String, Object>> detail(@PathVariable Long id) {
+    public Result<java.util.Map<String, Object>> detail(@PathVariable Long id, HttpServletRequest request) {
+        Long studentId = (Long) request.getAttribute("userId");
+
+        // 如果是学生角色，检查考试状态
+        if (studentId != null) {
+            String role = (String) request.getAttribute("role");
+            if ("student".equals(role) || "0".equals(role)) {
+                // 检查是否已完成考试
+                if (examRecordService.hasCompletedExam(studentId, id)) {
+                    return Result.error(403, "您已完成该试卷考试，不可重复参加");
+                }
+
+                // 检查是否有正在进行的考试
+                ExamRecord ongoing = examRecordService.getOngoingExam(studentId, id);
+                if (ongoing != null) {
+                    java.util.Map<String, Object> res = new java.util.HashMap<>();
+                    res.put("paper", examPaperService.getById(id));
+                    res.put("ongoingRecord", ongoing);
+                    res.put("message", "有正在进行的考试");
+                    return Result.success("继续考试", res);
+                }
+            }
+        }
+
         ExamPaper paper = examPaperService.getById(id);
         if (paper == null) {
             return Result.error("试卷不存在");

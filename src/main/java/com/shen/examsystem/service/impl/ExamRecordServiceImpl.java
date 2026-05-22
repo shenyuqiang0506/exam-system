@@ -181,6 +181,36 @@ public class ExamRecordServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRec
     }
 
     @Override
+    public boolean hasCompletedExam(Long studentId, Long paperId) {
+        LambdaQueryWrapper<ExamRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ExamRecord::getStudentId, studentId)
+               .eq(ExamRecord::getPaperId, paperId)
+               .eq(ExamRecord::getStatus, 1); // 已交卷
+        return this.count(wrapper) > 0;
+    }
+
+    @Override
+    public ExamRecord getOngoingExam(Long studentId, Long paperId) {
+        LambdaQueryWrapper<ExamRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ExamRecord::getStudentId, studentId)
+               .eq(ExamRecord::getPaperId, paperId)
+               .eq(ExamRecord::getStatus, 0) // 考试中
+               .orderByDesc(ExamRecord::getCreateTime)
+               .last("LIMIT 1");
+        return this.getOne(wrapper);
+    }
+
+    @Override
+    public ExamRecord getStudentRecord(Long studentId, Long paperId) {
+        LambdaQueryWrapper<ExamRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ExamRecord::getStudentId, studentId)
+               .eq(ExamRecord::getPaperId, paperId)
+               .orderByDesc(ExamRecord::getCreateTime)
+               .last("LIMIT 1");
+        return this.getOne(wrapper);
+    }
+
+    @Override
     public Map<String, Object> getRecordDetail(Long recordId) {
         ExamRecord record = this.getById(recordId);
         if (record == null) {

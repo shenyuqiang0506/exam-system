@@ -1,7 +1,9 @@
 package com.shen.examsystem.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * 组卷规则 DTO
@@ -9,6 +11,9 @@ import java.math.BigDecimal;
  */
 @Data
 public class PaperRuleDTO {
+
+    /** 试卷名称 */
+    private String title;
 
     /** 科目名称 */
     private String subjectName;
@@ -33,4 +38,12 @@ public class PaperRuleDTO {
     private Integer subjectiveCount;
     /** 主观题单分 */
     private BigDecimal subjectiveScore;
+
+    /** 考试开始时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime startTime;
+
+    /** 考试结束时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime endTime;
 }
