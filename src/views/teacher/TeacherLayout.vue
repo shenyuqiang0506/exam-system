@@ -57,6 +57,24 @@
           <el-icon><School /></el-icon>
           <span>班级管理</span>
         </el-menu-item>
+        <el-sub-menu index="ai">
+          <template #title>
+            <el-icon><MagicStick /></el-icon>
+            <span>AI功能</span>
+          </template>
+          <el-menu-item index="/teacher/ai-grade">
+            <el-icon><EditPen /></el-icon>
+            <span>AI判分</span>
+          </el-menu-item>
+          <el-menu-item index="/teacher/ai-generate">
+            <el-icon><Document /></el-icon>
+            <span>AI出题</span>
+          </el-menu-item>
+          <el-menu-item index="/teacher/ai-logs">
+            <el-icon><DataAnalysis /></el-icon>
+            <span>判分日志</span>
+          </el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
 
@@ -132,7 +150,10 @@ const currentRoute = computed(() => {
     '/teacher/auto-paper': '智能组卷',
     '/teacher/records': '成绩管理',
     '/teacher/users': '学生管理',
-    '/teacher/classes': '班级管理'
+    '/teacher/classes': '班级管理',
+    '/teacher/ai-grade': 'AI判分',
+    '/teacher/ai-generate': 'AI出题',
+    '/teacher/ai-logs': 'AI日志'
   }
   return map[route.path] || '首页'
 })

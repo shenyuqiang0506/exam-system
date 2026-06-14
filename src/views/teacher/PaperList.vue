@@ -37,11 +37,14 @@
             <el-tag :type="getStatusType(row)" size="small">{{ getStatusText(row) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="300" fixed="right">
+        <el-table-column label="操作" width="350" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="viewDetail(row)">详情</el-button>
             <el-button type="info" link @click="handlePreview(row)">预览</el-button>
             <el-button type="info" link @click="handleEdit(row)">编辑</el-button>
+            <el-button v-if="row.enableMonitor === 1" type="success" link @click="goMonitor(row)">
+              <el-icon><Monitor /></el-icon> 监控
+            </el-button>
             <el-popconfirm v-if="row.isArchived === 0" title="确定归档？" @confirm="handleArchive(row.id)">
               <template #reference><el-button type="warning" link>归档</el-button></template>
             </el-popconfirm>
@@ -76,6 +79,10 @@
           <el-date-picker v-model="editForm.examTime" type="datetimerange" range-separator="至"
             start-placeholder="开始时间" end-placeholder="结束时间" value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" />
         </el-form-item>
+        <el-form-item label="考试监控">
+          <el-switch v-model="editForm.enableMonitor" :active-value="1" :inactive-value="0" />
+          <span style="margin-left: 10px; color: #909399; font-size: 12px;">开启后可实时监控学生</span>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="editVisible = false">取消</el-button>
@@ -87,11 +94,13 @@
 
 <script setup>
 import {ref, reactive, computed, onMounted} from 'vue'
+import {useRouter} from 'vue-router'
 import {ElMessage} from 'element-plus'
-import {Plus, MagicStick, Download} from '@element-plus/icons-vue'
+import {Plus, MagicStick, Download, Monitor} from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import PaperPreview from '@/components/PaperPreview.vue'
 
+const router = useRouter()
 const loading = ref(false)
 const saving = ref(false)
 const searchSubject = ref('')
@@ -103,7 +112,7 @@ const previewPaperId = ref(null)
 const currentPaper = ref({})
 const editFormRef = ref(null)
 
-const editForm = reactive({id: null, title: '', subjectName: '', totalScore: 100, examTime: []})
+const editForm = reactive({id: null, title: '', subjectName: '', totalScore: 100, examTime: [], enableMonitor: 0})
 const editRules = {title: [{required: true, message: '请输入试卷名称', trigger: 'blur'}]}
 
 const filteredPapers = computed(() => {
@@ -166,11 +175,16 @@ const viewDetail = async (row) => {
   } catch { ElMessage.error('获取详情失败') }
 }
 
+const goMonitor = (row) => {
+  router.push(`/teacher/monitor/${row.id}`)
+}
+
 const handlePreview = (row) => { previewPaperId.value = row.id; previewVisible.value = true }
 
 const handleEdit = (row) => {
   editForm.id = row.id; editForm.title = row.title; editForm.subjectName = row.subjectName
   editForm.totalScore = row.totalScore; editForm.examTime = row.startTime && row.endTime ? [row.startTime, row.endTime] : []
+  editForm.enableMonitor = row.enableMonitor || 0
   editVisible.value = true
 }
 
@@ -180,7 +194,13 @@ const handleSave = async () => {
     if (!valid) return
     saving.value = true
     try {
-      await request.put(`/api/paper/${editForm.id}`, {title: editForm.title, totalScore: editForm.totalScore, startTime: editForm.examTime?.[0], endTime: editForm.examTime?.[1]})
+      await request.put(`/api/paper/${editForm.id}`, {
+        title: editForm.title,
+        totalScore: editForm.totalScore,
+        startTime: editForm.examTime?.[0],
+        endTime: editForm.examTime?.[1],
+        enableMonitor: editForm.enableMonitor ? 1 : 0
+      })
       ElMessage.success('保存成功'); editVisible.value = false; loadPapers()
     } catch { ElMessage.error('保存失败') }
     finally { saving.value = false }

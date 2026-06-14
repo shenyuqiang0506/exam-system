@@ -44,7 +44,7 @@
         <div class="question-content">{{ question.content }}</div>
 
         <div v-if="question.type === 1" class="question-options">
-          <el-radio-group v-model="answers[question.id]">
+          <el-radio-group v-model="answers[question.id]" @change="reportProgress">
             <el-radio v-for="opt in question.options" :key="opt.value" :value="opt.value" class="option-item">
               {{ opt.value }}. {{ opt.label }}
             </el-radio>
@@ -52,7 +52,7 @@
         </div>
 
         <div v-else-if="question.type === 2" class="question-options">
-          <el-checkbox-group v-model="answers[question.id]">
+          <el-checkbox-group v-model="answers[question.id]" @change="reportProgress">
             <el-checkbox v-for="opt in question.options" :key="opt.value" :label="opt.value" class="option-item">
               {{ opt.value }}. {{ opt.label }}
             </el-checkbox>
@@ -60,7 +60,7 @@
         </div>
 
         <div v-else-if="question.type === 4" class="question-textarea">
-          <el-input v-model="answers[question.id]" type="textarea" :rows="4" placeholder="请输入你的作答内容..."/>
+          <el-input v-model="answers[question.id]" type="textarea" :rows="4" placeholder="请输入你的作答内容..." @blur="reportProgress"/>
         </div>
       </el-card>
     </div>
@@ -83,10 +83,13 @@ import {useRoute, useRouter} from 'vue-router'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {Check, WarningFilled, Lock} from '@element-plus/icons-vue'
 import request from '@/utils/request'
+import {connect, subscribe, send, disconnect} from '@/utils/websocket'
+import {useUserStore} from '@/stores/user'
 
 const route = useRoute()
 const router = useRouter()
-const paperInfo = reactive({title: '加载中...', totalScore: 100, duration: 120})
+const userStore = useUserStore()
+const paperInfo = reactive({title: '加载中...', totalScore: 100, duration: 120, enableMonitor: 0})
 const questions = ref([])
 const answers = reactive({})
 const submitting = ref(false)
@@ -117,6 +120,8 @@ const getTypeTag = (type) => ({1: '', 2: 'warning', 4: 'success'}[type] || 'info
 const handleVisibilityChange = () => {
   if (document.hidden) {
     switchCount.value++
+    // 上报切屏事件
+    reportScreenSwitch()
     if (switchCount.value >= maxSwitchCount.value) {
       warningMessage.value = `您已切屏 ${switchCount.value} 次，超过限制次数，系统将自动交卷！`
       warningVisible.value = true
@@ -216,6 +221,12 @@ const loadExamData = async () => {
 
     paperInfo.title = res.data.paper.title
     paperInfo.totalScore = res.data.paper.totalScore
+    paperInfo.enableMonitor = res.data.paper.enableMonitor || 0
+
+    // 如果开启了监控，连接 WebSocket
+    if (paperInfo.enableMonitor === 1) {
+      connectWebSocket()
+    }
 
     // 根据试卷结束时间计算剩余秒数
     if (res.data.paper.endTime) {
@@ -260,6 +271,83 @@ const loadExamData = async () => {
   }
 }
 
+// ==================== WebSocket 监控 ====================
+const connectWebSocket = () => {
+  const paperId = route.params.paperId
+  const studentId = userStore.userInfo?.id
+
+  connect('/ws/exam', () => {
+    console.log('WebSocket 连接成功')
+
+    // 通知教师上线（携带题目数量）
+    send(`/app/exam/online/${paperId}`, {
+      type: 'STUDENT_ONLINE',
+      studentId: studentId,
+      studentName: userStore.userInfo?.realName || userStore.userInfo?.username,
+      paperId: Number(paperId),
+      totalQuestions: questions.value.length,
+      answeredCount: getAnsweredCount()
+    })
+
+    // 订阅考试结束消息
+    subscribe(`/topic/exam/${paperId}`, (message) => {
+      if (message.type === 'EXAM_END') {
+        ElMessage.warning('考试已结束，系统自动交卷')
+        doSubmit()
+      }
+    })
+
+    // 启动心跳
+    setInterval(() => {
+      send(`/app/exam/heartbeat/${paperId}`, {
+        type: 'HEARTBEAT',
+        studentId: studentId,
+        paperId: Number(paperId)
+      })
+    }, 30000)
+  })
+}
+
+// 计算已答题目数
+const getAnsweredCount = () => {
+  let count = 0
+  for (const qId in answers) {
+    const ans = answers[qId]
+    if (Array.isArray(ans) ? ans.length > 0 : ans !== '') {
+      count++
+    }
+  }
+  return count
+}
+
+// 上报答题进度
+const reportProgress = () => {
+  if (paperInfo.enableMonitor === 1) {
+    const paperId = route.params.paperId
+    send(`/app/exam/answer/${paperId}`, {
+      type: 'ANSWER_SAVE',
+      studentId: userStore.userInfo?.id,
+      studentName: userStore.userInfo?.realName || userStore.userInfo?.username,
+      paperId: Number(paperId),
+      answeredCount: getAnsweredCount(),
+      totalQuestions: questions.value.length
+    })
+  }
+}
+
+// 上报切屏事件到 WebSocket
+const reportScreenSwitch = () => {
+  if (paperInfo.enableMonitor === 1) {
+    const paperId = route.params.paperId
+    send(`/app/exam/screen/${paperId}`, {
+      type: 'SCREEN_SWITCH',
+      studentId: userStore.userInfo?.id,
+      studentName: userStore.userInfo?.realName || userStore.userInfo?.username,
+      paperId: Number(paperId)
+    })
+  }
+}
+
 onMounted(async () => {
   const success = await loadExamData()
   if (!success) return
@@ -280,6 +368,16 @@ onMounted(async () => {
 onUnmounted(() => {
   if (timer) clearInterval(timer)
   removeAntiCheat()
+  // 断开 WebSocket
+  if (paperInfo.enableMonitor === 1) {
+    const paperId = route.params.paperId
+    send(`/app/exam/offline/${paperId}`, {
+      type: 'STUDENT_OFFLINE',
+      studentId: userStore.userInfo?.id,
+      paperId: Number(paperId)
+    })
+    disconnect()
+  }
 })
 
 const handleSubmit = async () => {

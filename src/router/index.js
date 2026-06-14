@@ -86,6 +86,30 @@ const router = createRouter({
                     name: 'PaperPreviewEdit',
                     component: () => import('@/views/teacher/PaperPreviewEdit.vue'),
                     meta: {title: '试卷预览编辑'}
+                },
+                {
+                    path: 'monitor/:paperId',
+                    name: 'ExamMonitor',
+                    component: () => import('@/views/teacher/ExamMonitor.vue'),
+                    meta: {title: '考试监控'}
+                },
+                {
+                    path: 'ai-grade',
+                    name: 'AIGrade',
+                    component: () => import('@/views/teacher/AIGrade.vue'),
+                    meta: {title: 'AI判分'}
+                },
+                {
+                    path: 'ai-generate',
+                    name: 'AIGenerateQuestion',
+                    component: () => import('@/views/teacher/AIGenerateQuestion.vue'),
+                    meta: {title: 'AI出题'}
+                },
+                {
+                    path: 'ai-logs',
+                    name: 'AIGradeLogs',
+                    component: () => import('@/views/teacher/AIGradeLogs.vue'),
+                    meta: {title: 'AI日志'}
                 }
             ]
         },

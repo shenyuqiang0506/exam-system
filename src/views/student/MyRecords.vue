@@ -11,17 +11,29 @@
         </el-table-column>
         <el-table-column prop="objectiveScore" label="客观题" width="100"/>
         <el-table-column prop="subjectiveScore" label="主观题" width="100"/>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" label="状态" width="120">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'warning'">
-              {{ row.status === 1 ? '已批阅' : '批阅中' }}
-            </el-tag>
+            <div>
+              <el-tag :type="getStatusType(row.status)">
+                {{ getStatusText(row.status) }}
+              </el-tag>
+              <div v-if="row.aiGradeStatusDesc" class="ai-status-text">
+                {{ row.aiGradeStatusDesc }}
+              </div>
+            </div>
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="考试时间" width="180"/>
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="viewDetail(row.id)">查看详情</el-button>
+            <el-button 
+              type="primary" 
+              link 
+              @click="viewDetail(row.id)"
+              :disabled="row.status === 2"
+            >
+              {{ row.status === 2 ? '判分中...' : '查看详情' }}
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -44,10 +56,34 @@ const loadRecords = async () => {
   try {
     const res = await request.get('/api/record/my-records')
     recordList.value = res.data
+    
+    // 检查是否有正在判分的记录，自动刷新
+    const hasGrading = res.data.some(r => r.status === 2 || r.aiGradeStatus === 1)
+    if (hasGrading) {
+      setTimeout(loadRecords, 3000) // 3秒后自动刷新
+    }
   } catch {
     ElMessage.error('加载记录失败')
   } finally {
     loading.value = false
+  }
+}
+
+const getStatusType = (status) => {
+  switch (status) {
+    case 0: return 'warning'
+    case 1: return 'success'
+    case 2: return 'info'
+    default: return 'info'
+  }
+}
+
+const getStatusText = (status) => {
+  switch (status) {
+    case 0: return '考试中'
+    case 1: return '已批阅'
+    case 2: return '待批阅'
+    default: return '未知'
   }
 }
 
@@ -67,5 +103,11 @@ onMounted(loadRecords)
   font-weight: bold;
   color: #409eff;
   font-size: 16px;
+}
+
+.ai-status-text {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
 }
 </style>

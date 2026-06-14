@@ -63,6 +63,12 @@
           </el-select>
         </el-form-item>
 
+        <!-- 考试监控 -->
+        <el-form-item label="考试监控">
+          <el-switch v-model="formData.enableMonitor" :active-value="1" :inactive-value="0" />
+          <span class="monitor-tip">开启后可实时监控学生作答状态</span>
+        </el-form-item>
+
         <!-- 题目选择区域 -->
         <el-form-item label="选择题目">
           <el-transfer
@@ -129,7 +135,8 @@ const formData = reactive({
   subjectName: '',
   questionIds: [],
   examTime: [],
-  classIds: []
+  classIds: [],
+  enableMonitor: 0
 })
 
 const rules = {
@@ -197,7 +204,8 @@ const handleSubmit = async () => {
         title: formData.title,
         subjectName: formData.subjectName,
         startTime: formData.examTime?.[0] || null,
-        endTime: formData.examTime?.[1] || null
+        endTime: formData.examTime?.[1] || null,
+        enableMonitor: formData.enableMonitor ? 1 : 0
       }
       await request.post('/api/paper/manual-create', {
         paper: paperData,
@@ -265,6 +273,12 @@ onMounted(() => {
 .item-score {
   margin-left: auto;
   color: #f56c6c;
+  font-size: 12px;
+}
+
+.monitor-tip {
+  margin-left: 10px;
+  color: #909399;
   font-size: 12px;
 }
 </style>

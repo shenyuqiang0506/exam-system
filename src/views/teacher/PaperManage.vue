@@ -36,10 +36,13 @@
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="180"/>
-        <el-table-column label="操作" width="250" fixed="right">
+        <el-table-column label="操作" width="300" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="handlePreview(row)">
               预览
+            </el-button>
+            <el-button v-if="row.enableMonitor === 1" type="success" link @click="goMonitor(row)">
+              <el-icon><Monitor /></el-icon> 监控
             </el-button>
             <el-popconfirm
                 v-if="row.isArchived === 0"
@@ -98,7 +101,7 @@
 import {ref, reactive, onMounted} from 'vue'
 import {useRouter} from 'vue-router'
 import {ElMessage} from 'element-plus'
-import {Plus, MagicStick} from '@element-plus/icons-vue'
+import { Plus, MagicStick, Monitor } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 
 const router = useRouter()
@@ -158,6 +161,10 @@ const handleCreate = () => {
 const handlePreview = (row) => {
   // 跳转到新页面预览编辑
   router.push(`/teacher/paper-preview/${row.id}`)
+}
+
+const goMonitor = (row) => {
+  router.push(`/teacher/monitor/${row.id}`)
 }
 
 const handleArchive = async (id) => {

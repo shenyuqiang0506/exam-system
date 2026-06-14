@@ -83,6 +83,12 @@
           </el-select>
         </el-form-item>
 
+        <!-- 考试监控 -->
+        <el-form-item label="考试监控">
+          <el-switch v-model="ruleForm.enableMonitor" :active-value="1" :inactive-value="0" />
+          <span class="monitor-tip">开启后可实时监控学生作答状态</span>
+        </el-form-item>
+
         <!-- 期望难度 -->
         <el-form-item label="期望难度">
           <el-slider
@@ -227,7 +233,8 @@ const ruleForm = reactive({
   subjectiveCount: 3,
   subjectiveScore: 10,
   examTime: [],
-  classIds: []
+  classIds: [],
+  enableMonitor: 0
 })
 
 const rules = reactive({
@@ -311,5 +318,11 @@ onMounted(() => {
   color: #909399;
   font-size: 12px;
   margin-top: 4px;
+}
+
+.monitor-tip {
+  margin-left: 10px;
+  color: #909399;
+  font-size: 12px;
 }
 </style>
