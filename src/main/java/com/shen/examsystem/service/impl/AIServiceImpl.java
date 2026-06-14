@@ -226,7 +226,7 @@ public class AIServiceImpl implements AIService {
                     "questions": [
                         {
                             "content": "题目内容",
-                            "options": ["选项A", "选项B", "选项C", "选项D"],
+                            "options": ["选项内容1", "选项内容2", "选项内容3", "选项内容4"],
                             "answer": "正确答案",
                             "analysis": "解析"
                         }
@@ -235,10 +235,11 @@ public class AIServiceImpl implements AIService {
                 
                 注意：
                 1. 只返回JSON，不要有其他内容
-                2. 单选题answer为单个字母（如"A"）
-                3. 多选题answer为多个字母（如"ABC"）
-                4. 判断题options为["正确","错误"]，answer为"对"或"错"
-                5. 主观题options为空数组，answer为参考答案
+                2. 选项内容不要带A、B、C、D前缀，直接写选项文字
+                3. 单选题answer为单个字母（如"A"）
+                4. 多选题answer为多个字母（如"ABC"）
+                5. 判断题options为["正确","错误"]，answer为"对"或"错"
+                6. 主观题options为空数组，answer为参考答案
                 """, count, subject, knowledge, typeName, difficulty);
     }
 
