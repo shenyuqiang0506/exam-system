@@ -24,7 +24,7 @@ public class ExamRecord {
     /** 试卷ID */
     private Long paperId;
 
-    /** 状态: 0-考试中, 1-已交卷/已批阅 */
+    /** 状态: 0-考试中, 1-已交卷/已批阅, 2-待AI批阅 */
     private Integer status;
 
     /** 最终总得分 */
@@ -35,6 +35,9 @@ public class ExamRecord {
 
     /** 主观题得分 */
     private BigDecimal subjectiveScore;
+    
+    /** AI判分状态: 0-未开始, 1-判分中, 2-判分完成, 3-判分失败 */
+    private Integer aiGradeStatus;
 
     /** 创建时间 */
     @TableField(fill = FieldFill.INSERT)

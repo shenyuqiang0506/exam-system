@@ -1,7 +1,6 @@
 package com.shen.examsystem.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -10,49 +9,75 @@ import java.util.List;
  * 组卷规则 DTO
  * 用于遗传算法智能组卷的输入参数
  */
-@Data
 public class PaperRuleDTO {
 
-    /** 试卷名称 */
     private String title;
-
-    /** 科目名称 */
     private String subjectName;
-
-    /** 期望难度系数 (0.1 ~ 1.0) */
     private BigDecimal targetDifficulty;
-
-    /** 试卷总分 */
     private BigDecimal totalScore;
-
-    /** 单选题数量 (题型=1) */
     private Integer singleChoiceCount;
-    /** 单选题单分 */
     private BigDecimal singleChoiceScore;
-
-    /** 多选题数量 (题型=2) */
     private Integer multiChoiceCount;
-    /** 多选题单分 */
     private BigDecimal multiChoiceScore;
-
-    /** 判断题数量 (题型=3) */
     private Integer trueFalseCount;
-    /** 判断题单分 */
     private BigDecimal trueFalseScore;
-
-    /** 主观题数量 (题型=4) */
     private Integer subjectiveCount;
-    /** 主观题单分 */
     private BigDecimal subjectiveScore;
 
-    /** 考试开始时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime startTime;
 
-    /** 考试结束时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime endTime;
 
-    /** 分配的班级ID列表 */
     private List<Long> classIds;
+    private Integer enableMonitor;
+
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+
+    public String getSubjectName() { return subjectName; }
+    public void setSubjectName(String subjectName) { this.subjectName = subjectName; }
+
+    public BigDecimal getTargetDifficulty() { return targetDifficulty; }
+    public void setTargetDifficulty(BigDecimal targetDifficulty) { this.targetDifficulty = targetDifficulty; }
+
+    public BigDecimal getTotalScore() { return totalScore; }
+    public void setTotalScore(BigDecimal totalScore) { this.totalScore = totalScore; }
+
+    public Integer getSingleChoiceCount() { return singleChoiceCount; }
+    public void setSingleChoiceCount(Integer singleChoiceCount) { this.singleChoiceCount = singleChoiceCount; }
+
+    public BigDecimal getSingleChoiceScore() { return singleChoiceScore; }
+    public void setSingleChoiceScore(BigDecimal singleChoiceScore) { this.singleChoiceScore = singleChoiceScore; }
+
+    public Integer getMultiChoiceCount() { return multiChoiceCount; }
+    public void setMultiChoiceCount(Integer multiChoiceCount) { this.multiChoiceCount = multiChoiceCount; }
+
+    public BigDecimal getMultiChoiceScore() { return multiChoiceScore; }
+    public void setMultiChoiceScore(BigDecimal multiChoiceScore) { this.multiChoiceScore = multiChoiceScore; }
+
+    public Integer getTrueFalseCount() { return trueFalseCount; }
+    public void setTrueFalseCount(Integer trueFalseCount) { this.trueFalseCount = trueFalseCount; }
+
+    public BigDecimal getTrueFalseScore() { return trueFalseScore; }
+    public void setTrueFalseScore(BigDecimal trueFalseScore) { this.trueFalseScore = trueFalseScore; }
+
+    public Integer getSubjectiveCount() { return subjectiveCount; }
+    public void setSubjectiveCount(Integer subjectiveCount) { this.subjectiveCount = subjectiveCount; }
+
+    public BigDecimal getSubjectiveScore() { return subjectiveScore; }
+    public void setSubjectiveScore(BigDecimal subjectiveScore) { this.subjectiveScore = subjectiveScore; }
+
+    public LocalDateTime getStartTime() { return startTime; }
+    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+
+    public LocalDateTime getEndTime() { return endTime; }
+    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+
+    public List<Long> getClassIds() { return classIds; }
+    public void setClassIds(List<Long> classIds) { this.classIds = classIds; }
+
+    public Integer getEnableMonitor() { return enableMonitor; }
+    public void setEnableMonitor(Integer enableMonitor) { this.enableMonitor = enableMonitor; }
 }

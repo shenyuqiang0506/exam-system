@@ -103,6 +103,7 @@ public class ExamPaperController {
         paper.setTargetDifficulty(rule.getTargetDifficulty());
         paper.setStartTime(rule.getStartTime());
         paper.setEndTime(rule.getEndTime());
+        paper.setEnableMonitor(rule.getEnableMonitor() != null ? rule.getEnableMonitor() : 0);
         paper.setIsArchived(0);
         examPaperService.save(paper);
 

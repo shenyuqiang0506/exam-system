@@ -132,6 +132,43 @@ public class ExamRecordController {
     }
 
     /**
+     * 强制学生交卷（教师端）
+     */
+    @PostMapping("/force-submit")
+    @RequireRole({1, 2})
+    public Result<String> forceSubmit(@RequestBody Map<String, Object> params, HttpServletRequest request) {
+        Long studentId = Long.valueOf(params.get("studentId").toString());
+        Long paperId = Long.valueOf(params.get("paperId").toString());
+
+        // 查找进行中的考试
+        ExamRecord ongoing = examRecordService.getOngoingExam(studentId, paperId);
+
+        // 如果没有进行中的，查找最新的记录
+        if (ongoing == null) {
+            ongoing = examRecordService.getStudentRecord(studentId, paperId);
+        }
+
+        if (ongoing == null) {
+            return Result.error(404, "未找到该学生的考试记录");
+        }
+
+        // 如果已经交卷，直接返回成功
+        if (ongoing.getStatus() == 1) {
+            return Result.success("该学生已交卷", null);
+        }
+
+        // 将状态改为已交卷
+        ongoing.setStatus(1);
+        ongoing.setUpdateTime(LocalDateTime.now());
+        ongoing.setTotalScore(BigDecimal.ZERO);
+        ongoing.setObjectiveScore(BigDecimal.ZERO);
+        ongoing.setSubjectiveScore(BigDecimal.ZERO);
+        examRecordService.updateById(ongoing);
+
+        return Result.success("强制交卷成功", null);
+    }
+
+    /**
      * 导出成绩到 Excel
      */
     @GetMapping("/export/{paperId}")

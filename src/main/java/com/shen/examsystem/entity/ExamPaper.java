@@ -38,6 +38,9 @@ public class ExamPaper {
     /** 状态: 0-正常, 1-已归档 */
     private Integer isArchived;
 
+    /** 是否开启考试监控: 0-关闭, 1-开启 */
+    private Integer enableMonitor;
+
     /** 创建时间 */
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

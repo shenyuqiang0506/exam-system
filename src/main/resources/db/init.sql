@@ -69,6 +69,7 @@ CREATE TABLE exam_paper (
     start_time         DATETIME      DEFAULT NULL COMMENT '考试开始时间',
     end_time           DATETIME      DEFAULT NULL COMMENT '考试结束时间',
     is_archived        TINYINT       NOT NULL DEFAULT 0 COMMENT '状态: 0-正常, 1-已归档',
+    enable_monitor     TINYINT       NOT NULL DEFAULT 0 COMMENT '是否开启考试监控: 0-关闭, 1-开启',
     create_time        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted            TINYINT       NOT NULL DEFAULT 0 COMMENT '逻辑删除: 0-未删除, 1-已删除',
@@ -101,10 +102,11 @@ CREATE TABLE exam_record (
     id               BIGINT        NOT NULL COMMENT '记录ID (雪花算法)',
     student_id       BIGINT        NOT NULL COMMENT '学生用户ID',
     paper_id         BIGINT        NOT NULL COMMENT '试卷ID',
-    status           TINYINT       NOT NULL DEFAULT 0 COMMENT '状态: 0-考试中, 1-已交卷/已批阅',
+    status           TINYINT       NOT NULL DEFAULT 0 COMMENT '状态: 0-考试中, 1-已交卷/已批阅, 2-待AI批阅',
     total_score      DECIMAL(6,1)  DEFAULT NULL COMMENT '最终总得分',
     objective_score  DECIMAL(6,1)  DEFAULT NULL COMMENT '客观题得分',
     subjective_score DECIMAL(6,1)  DEFAULT NULL COMMENT '主观题得分',
+    ai_grade_status  TINYINT       DEFAULT 0 COMMENT 'AI判分状态: 0-未开始, 1-判分中, 2-判分完成, 3-判分失败',
     create_time      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted          TINYINT       NOT NULL DEFAULT 0 COMMENT '逻辑删除: 0-未删除, 1-已删除',
@@ -180,6 +182,29 @@ CREATE TABLE paper_class (
     KEY idx_paper_id (paper_id),
     KEY idx_class_id (class_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='试卷班级关联表';
+
+-- -------------------------------------------------
+-- 10. AI判分日志表 (ai_grade_log)
+-- -------------------------------------------------
+DROP TABLE IF EXISTS ai_grade_log;
+CREATE TABLE ai_grade_log (
+    id              BIGINT        NOT NULL COMMENT '日志ID (雪花算法)',
+    record_id       BIGINT        DEFAULT NULL COMMENT '考试记录ID',
+    question_id     BIGINT        DEFAULT NULL COMMENT '题目ID',
+    student_answer  TEXT          DEFAULT NULL COMMENT '学生作答内容',
+    standard_answer TEXT          DEFAULT NULL COMMENT '标准答案',
+    ai_score        DECIMAL(5,1)  DEFAULT NULL COMMENT 'AI评分',
+    ai_reason       TEXT          DEFAULT NULL COMMENT 'AI判分依据',
+    keywords        TEXT          DEFAULT NULL COMMENT '答对的关键点(JSON)',
+    missing         TEXT          DEFAULT NULL COMMENT '遗漏的关键点(JSON)',
+    model           VARCHAR(50)   DEFAULT NULL COMMENT '使用的AI模型',
+    create_time     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    deleted         TINYINT       NOT NULL DEFAULT 0 COMMENT '逻辑删除: 0-未删除, 1-已删除',
+    PRIMARY KEY (id),
+    KEY idx_record_id (record_id),
+    KEY idx_question_id (question_id),
+    KEY idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI判分日志表';
 
 -- =====================================================
 -- 测试数据

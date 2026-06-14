@@ -2,6 +2,7 @@ package com.shen.examsystem.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.shen.examsystem.dto.AIGradeResponse;
 import com.shen.examsystem.entity.AnswerDetail;
 import com.shen.examsystem.entity.ExamRecord;
 import com.shen.examsystem.entity.QuestionBank;
@@ -12,8 +13,11 @@ import com.shen.examsystem.mapper.ExamRecordMapper;
 import com.shen.examsystem.mapper.QuestionBankMapper;
 import com.shen.examsystem.mapper.PaperQuestionMapper;
 import com.shen.examsystem.entity.PaperQuestion;
+import com.shen.examsystem.service.AIService;
+import com.shen.examsystem.service.AsyncAIGradeService;
 import com.shen.examsystem.service.ExamRecordService;
 import com.shen.examsystem.service.SubjectiveGradingService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +31,7 @@ import java.util.stream.Collectors;
  * 考试记录 Service 实现类
  */
 @Service
+@Slf4j
 public class ExamRecordServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRecord> implements ExamRecordService {
 
     @Autowired
@@ -43,6 +48,12 @@ public class ExamRecordServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRec
 
     @Autowired
     private SubjectiveGradingService subjectiveGradingService;
+    
+    @Autowired
+    private AIService aiService;
+    
+    @Autowired
+    private AsyncAIGradeService asyncAIGradeService;
 
     @Override
     public List<ExamRecord> listByPaperId(Long paperId) {
@@ -71,27 +82,39 @@ public class ExamRecordServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRec
 
         // 构建题目ID -> 题目信息的映射
         Map<Long, QuestionBank> questionMap = new HashMap<>();
+        boolean hasSubjective = false;
         for (PaperQuestion pq : paperQuestions) {
             QuestionBank question = questionBankMapper.selectById(pq.getQuestionId());
             if (question != null) {
                 questionMap.put(question.getId(), question);
+                if (question.getType() == 4) {
+                    hasSubjective = true;
+                }
             }
         }
 
-        // 2. 创建考试记录
+        // 3. 创建考试记录
         ExamRecord record = new ExamRecord();
         record.setStudentId(studentId);
         record.setPaperId(paperId);
-        record.setStatus(1); // 已交卷/已批阅
+        
+        // 判断是否有主观题，决定是否需要异步AI判分
+        if (hasSubjective) {
+            record.setStatus(2); // 待AI批阅
+            record.setAiGradeStatus(1); // 判分中
+        } else {
+            record.setStatus(1); // 已交卷/已批阅
+            record.setAiGradeStatus(0); // 无需AI判分
+        }
+        
         record.setTotalScore(BigDecimal.ZERO);
         record.setObjectiveScore(BigDecimal.ZERO);
         record.setSubjectiveScore(BigDecimal.ZERO);
         this.save(record);
 
-        // 3. 保存答题明细并计算分数
+        // 4. 保存答题明细并计算客观题分数
         BigDecimal totalScore = BigDecimal.ZERO;
         BigDecimal objectiveScore = BigDecimal.ZERO;
-        BigDecimal subjectiveScore = BigDecimal.ZERO;
 
         for (Object item : answers) {
             Long questionId;
@@ -115,7 +138,6 @@ public class ExamRecordServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRec
 
             QuestionBank question = questionMap.get(questionId);
             BigDecimal score = BigDecimal.ZERO;
-            String aiReason = null;
 
             if (question != null) {
                 int questionType = question.getType();
@@ -132,37 +154,30 @@ public class ExamRecordServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRec
                         }
                     }
                     objectiveScore = objectiveScore.add(score);
-                } else {
-                    // 主观题：使用 NLP 判分
-                    if (answerText != null && !answerText.isEmpty()) {
-                        score = BigDecimal.valueOf(subjectiveGradingService.gradeSubjective(
-                            answerText,
-                            standardAnswer != null ? standardAnswer : "",
-                            questionScore.doubleValue()
-                        ));
-                        aiReason = String.format("基于余弦相似度计算得分：%.1f分（满分%.1f分）",
-                            score.doubleValue(), questionScore.doubleValue());
-                    }
-                    subjectiveScore = subjectiveScore.add(score);
+                    totalScore = totalScore.add(score);
                 }
+                // 主观题先不计分，等异步AI判分完成后再计算
             }
 
             AnswerDetail detail = new AnswerDetail();
             detail.setRecordId(record.getId());
             detail.setQuestionId(questionId);
             detail.setStudentAnswer(answerText);
-            detail.setScore(score);
-            detail.setAiReason(aiReason);
+            detail.setScore(question != null && question.getType() <= 3 ? score : null); // 主观题分数暂时为空
+            detail.setAiReason(null); // 主观题AI判分依据暂时为空
             answerDetailMapper.insert(detail);
-
-            totalScore = totalScore.add(score);
         }
 
-        // 4. 更新记录分数
-        record.setTotalScore(totalScore);
+        // 5. 更新记录客观题分数
         record.setObjectiveScore(objectiveScore);
-        record.setSubjectiveScore(subjectiveScore);
+        record.setTotalScore(totalScore);
         this.updateById(record);
+
+        // 6. 如果有主观题，触发异步AI判分
+        if (hasSubjective) {
+            log.info("触发异步AI判分 - 记录ID: {}", record.getId());
+            asyncAIGradeService.executeAIGrade(record.getId());
+        }
 
         return record.getId();
     }
@@ -188,10 +203,30 @@ public class ExamRecordServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRec
             map.put("objectiveScore", record.getObjectiveScore());
             map.put("subjectiveScore", record.getSubjectiveScore());
             map.put("status", record.getStatus());
+            map.put("aiGradeStatus", record.getAiGradeStatus());
             map.put("createTime", record.getCreateTime() != null ? record.getCreateTime().format(formatter) : "");
+            
+            // AI判分状态描述
+            String aiGradeStatusDesc = getAIGradeStatusDesc(record.getAiGradeStatus());
+            map.put("aiGradeStatusDesc", aiGradeStatusDesc);
+            
             result.add(map);
         }
         return result;
+    }
+    
+    /**
+     * 获取AI判分状态描述
+     */
+    private String getAIGradeStatusDesc(Integer status) {
+        if (status == null) return "";
+        switch (status) {
+            case 0: return "";
+            case 1: return "AI判分中...";
+            case 2: return "AI判分完成";
+            case 3: return "AI判分失败";
+            default: return "";
+        }
     }
 
     @Override
