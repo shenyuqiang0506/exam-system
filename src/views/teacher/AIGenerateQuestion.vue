@@ -78,7 +78,7 @@
             <div v-if="q.options && q.options.length > 0" class="question-options">
               <div v-for="(opt, optIndex) in q.options" :key="optIndex" class="option-item">
                 <span class="option-label">{{ getOptionLabel(optIndex) }}.</span>
-                <span>{{ opt }}</span>
+                <span>{{ cleanOption(opt) }}</span>
               </div>
             </div>
 
@@ -142,6 +142,13 @@ const getTypeTag = (type) => {
 // 获取选项标签
 const getOptionLabel = (index) => {
   return String.fromCharCode(65 + index)
+}
+
+// 清理选项前缀（去掉A. B. C. D.等）
+const cleanOption = (opt) => {
+  if (!opt) return ''
+  // 去掉开头的字母前缀，如 "A. xxx" -> "xxx"
+  return opt.replace(/^[A-Da-d][.、:：]\s*/, '').trim()
 }
 
 // AI出题
