@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
- * AI配置类 - 小米MiMo via 硅基流动
+ * AI配置类
  */
 @Data
 @Component

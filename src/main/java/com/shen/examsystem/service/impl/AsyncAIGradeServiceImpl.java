@@ -45,9 +45,15 @@ public class AsyncAIGradeServiceImpl implements AsyncAIGradeService {
 
     @Override
     @Async("aiGradeExecutor")
-    @Transactional(rollbackFor = Exception.class)
     public void executeAIGrade(Long recordId) {
         log.info("开始异步AI判分，记录ID: {}", recordId);
+        
+        // 等待主事务提交，确保数据可见
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         
         ExamRecord record = examRecordMapper.selectById(recordId);
         if (record == null) {
