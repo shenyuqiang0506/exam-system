@@ -24,11 +24,6 @@ public class QuestionExcelListener extends AnalysisEventListener<QuestionExcelDT
 
     private List<QuestionBank> cachedDataList = new ArrayList<>(BATCH_COUNT);
 
-    public QuestionExcelListener(QuestionBankService questionBankService) {
-        this.questionBankService = questionBankService;
-        this.teacherId = null;
-    }
-
     public QuestionExcelListener(QuestionBankService questionBankService, Long teacherId) {
         this.questionBankService = questionBankService;
         this.teacherId = teacherId;

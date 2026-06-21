@@ -107,28 +107,47 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String importStudents(MultipartFile file) {
-        List<SysUser> students = new ArrayList<>();
-        List<String> errors = new ArrayList<>();
+        // 使用数组包装，使其可以在内部类中修改
+        final List<SysUser>[] studentsArray = new List[]{new ArrayList<>()};
+        final List<String>[] errorsArray = new List[]{new ArrayList<>()};
 
         try {
             EasyExcel.read(file.getInputStream(), StudentImportDTO.class, new ReadListener<StudentImportDTO>() {
                 @Override
                 public void invoke(StudentImportDTO data, AnalysisContext context) {
                     int rowIndex = context.readRowHolder().getRowIndex() + 1;
+                    List<SysUser> students = studentsArray[0];
+                    List<String> errors = errorsArray[0];
+
+                    // 跳过第一行（表头）
+                    if (rowIndex == 1) {
+                        System.out.println("=== 跳过表头行 ===");
+                        return;
+                    }
 
                     // 学号必填
-                    if (data.getStudentNo() == null || data.getStudentNo().isEmpty()) {
+                    if (data.getStudentNo() == null || data.getStudentNo().trim().isEmpty()) {
                         errors.add("第" + rowIndex + "行: 学号不能为空");
                         return;
                     }
 
-                    // 用户名 = 学号
-                    String username = data.getStudentNo();
+                    String studentNo = data.getStudentNo().trim();
+                    
+                    // 验证学号格式
+                    if (!studentNo.matches("^[0-9a-zA-Z]+$")) {
+                        errors.add("第" + rowIndex + "行: 学号格式错误，只能包含数字或字母，当前值: " + studentNo);
+                        return;
+                    }
 
-                    // 检查学号是否已存在（数据库中）
+                    // 用户名 = 学号
+                    String username = studentNo;
+
+                    // 检查学号是否已存在（只查未删除的记录）
                     LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<>();
                     wrapper.eq(SysUser::getUsername, username);
-                    if (SysUserServiceImpl.this.count(wrapper) > 0) {
+                    long count = SysUserServiceImpl.this.count(wrapper);
+                    
+                    if (count > 0) {
                         errors.add("第" + rowIndex + "行: 学号 " + username + " 已存在于数据库");
                         return;
                     }
@@ -141,7 +160,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                         return;
                     }
 
-                    // 初始密码 = 学号后6位（如果学号不足6位则用学号本身）
+                    // 初始密码 = 学号后6位
                     String rawPassword = username.length() > 6
                         ? username.substring(username.length() - 6)
                         : username;
@@ -150,7 +169,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                     student.setUsername(username);
                     student.setPassword(passwordEncoder.encode(rawPassword));
                     student.setRealName(data.getRealName());
-                    student.setStudentNo(data.getStudentNo());
+                    student.setStudentNo(studentNo);
                     student.setPhone(data.getPhone());
                     student.setEmail(data.getEmail());
                     student.setClassName(data.getClassName());
@@ -163,37 +182,100 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                 public void doAfterAllAnalysed(AnalysisContext context) {}
             }).sheet().doRead();
 
-            // 批量保存学生并关联班级
+            List<SysUser> students = studentsArray[0];
+            List<String> errors = errorsArray[0];
+            List<SysUser> successList = new ArrayList<>();
+
+            // 批量保存新学生并关联班级
             if (!students.isEmpty()) {
-                this.saveBatch(students);
+                // 逐个插入，捕获唯一索引冲突
+                for (SysUser student : students) {
+                    try {
+                        this.save(student);
+                        successList.add(student);
+                        System.out.println("=== 学号 " + student.getUsername() + " 插入成功 ===");
+                    } catch (Exception e) {
+                        if (e.getMessage() != null && e.getMessage().contains("Duplicate entry")) {
+                            // 唯一索引冲突，记录已存在（可能是已删除的记录）
+                            System.out.println("=== 学号 " + student.getUsername() + " 已存在（可能已删除），尝试恢复 ===");
+                            
+                            // 使用自定义方法查询所有记录（包括已删除的）
+                            SysUser existingUser = SysUserServiceImpl.this.getBaseMapper().selectByUsernameIncludeDeleted(student.getUsername());
+                            
+                            if (existingUser != null) {
+                                System.out.println("=== 找到记录，ID: " + existingUser.getId() + ", deleted: " + existingUser.getDeleted() + " ===");
+                                
+                                // 使用自定义方法恢复已删除的记录
+                                int updateCount = SysUserServiceImpl.this.getBaseMapper().restoreDeletedUser(
+                                    existingUser.getId(),
+                                    student.getPassword(),
+                                    student.getRealName(),
+                                    student.getPhone(),
+                                    student.getEmail(),
+                                    student.getClassName(),
+                                    1 // status = 1
+                                );
+                                
+                                System.out.println("=== 更新记录数: " + updateCount + " ===");
+                                
+                                if (updateCount > 0) {
+                                    student.setId(existingUser.getId()); // 设置ID用于班级关联
+                                    successList.add(student);
+                                    System.out.println("=== 学号 " + student.getUsername() + " 恢复成功 ===");
+                                } else {
+                                    errors.add("学号 " + student.getUsername() + " 恢复失败");
+                                }
+                            } else {
+                                System.out.println("=== 未找到记录 ===");
+                                errors.add("学号 " + student.getUsername() + " 插入失败: " + e.getMessage());
+                            }
+                        } else {
+                            errors.add("学号 " + student.getUsername() + " 插入失败: " + e.getMessage());
+                        }
+                    }
+                }
 
                 // 处理班级关联
-                for (SysUser student : students) {
+                for (SysUser student : successList) {
                     if (student.getClassName() != null && !student.getClassName().isEmpty()) {
-                        // 查找或创建班级
                         ClassInfo classInfo = findOrCreateClass(student.getClassName());
-                        // 建立学生-班级关联
-                        ClassStudent cs = new ClassStudent();
-                        cs.setClassId(classInfo.getId());
-                        cs.setStudentId(student.getId());
-                        classStudentMapper.insert(cs);
+                        
+                        // 检查是否已存在班级关联（包括已删除的）
+                        ClassStudent existingCs = classStudentMapper.selectByClassAndStudentIncludeDeleted(classInfo.getId(), student.getId());
+                        
+                        if (existingCs != null) {
+                            // 已存在关联，恢复它
+                            if (existingCs.getDeleted() != null && existingCs.getDeleted() == 1) {
+                                classStudentMapper.restoreDeletedClassStudent(existingCs.getId());
+                                System.out.println("=== 恢复班级关联: 班级" + classInfo.getId() + " - 学生" + student.getId() + " ===");
+                            }
+                            // 如果未删除，则跳过（已存在）
+                        } else {
+                            // 不存在关联，创建新的
+                            ClassStudent cs = new ClassStudent();
+                            cs.setClassId(classInfo.getId());
+                            cs.setStudentId(student.getId());
+                            classStudentMapper.insert(cs);
+                            System.out.println("=== 创建班级关联: 班级" + classInfo.getId() + " - 学生" + student.getId() + " ===");
+                        }
                     }
                 }
             }
 
             StringBuilder result = new StringBuilder();
-            result.append("导入完成: 成功 ").append(students.size()).append(" 条");
+            result.append("导入完成: 成功 ").append(successList.size()).append(" 条");
             if (!errors.isEmpty()) {
                 result.append(", 失败 ").append(errors.size()).append(" 条");
                 result.append("。失败原因: ").append(String.join("; ", errors));
             }
-            if (!students.isEmpty()) {
+            if (!successList.isEmpty()) {
                 result.append("。初始密码为学号后6位");
             }
             return result.toString();
 
-        } catch (IOException e) {
-            throw new RuntimeException("文件读取失败: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("导入失败: " + e.getMessage());
         }
     }
 
@@ -219,9 +301,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     @Override
     public List<List<String>> getImportTemplate() {
         List<List<String>> data = new ArrayList<>();
-        // 表头：只填学号、姓名、班级等信息，不需要填用户名和密码
+        // 表头（第一行）
         data.add(List.of("学号", "真实姓名", "班级", "手机号", "邮箱"));
-        // 示例数据
+        // 示例数据（纵向排列，每行一个学生）
         data.add(List.of("2024001", "张三", "计算机2401班", "13800138001", "zhangsan@example.com"));
         data.add(List.of("2024002", "李四", "计算机2401班", "13800138002", "lisi@example.com"));
         data.add(List.of("2024003", "王五", "计算机2402班", "", ""));

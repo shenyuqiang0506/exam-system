@@ -42,9 +42,9 @@ public class AIServiceImpl implements AIService {
     private QuestionBankMapper questionBankMapper;
     
     private final OkHttpClient httpClient = new OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(180, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
             .build();
     
     private final Gson gson = new Gson();
@@ -197,6 +197,8 @@ public class AIServiceImpl implements AIService {
                 1. 只返回JSON，不要有其他内容
                 2. 得分保留1位小数
                 3. 判分依据要具体明确
+                4. reason字段必须是单行文本，不能包含换行符，用空格分隔句子
+                5. 所有字符串中的双引号必须用反斜杠转义，如\\"example\\"
                 """, question, standardAnswer, studentAnswer, fullScore, fullScore);
     }
 
@@ -240,6 +242,8 @@ public class AIServiceImpl implements AIService {
                 4. 多选题answer为多个字母（如"ABC"）
                 5. 判断题options为["正确","错误"]，answer为"对"或"错"
                 6. 主观题options为空数组，answer为参考答案
+                7. analysis字段必须是单行文本，不能包含换行符，用空格分隔句子
+                8. 所有字符串中的双引号必须用反斜杠转义，如\\"example\\"
                 """, count, subject, knowledge, typeName, difficulty);
     }
 
@@ -260,34 +264,104 @@ public class AIServiceImpl implements AIService {
 
             String json = gson.toJson(requestBody);
             
-            log.info("调用MiMo API，模型: {}", aiConfig.getModel());
+            String requestUrl = aiConfig.getBaseUrl() + "/chat/completions";
+            log.info("=== 开始调用小米MiMo API ===");
+            log.info("请求URL: {}", requestUrl);
+            log.info("请求模型: {}", aiConfig.getModel());
+            log.info("请求参数: {}", json);
 
+            // 小米MiMo API使用api-key头认证
             Request request = new Request.Builder()
-                    .url(aiConfig.getBaseUrl() + "/chat/completions")
-                    .addHeader("Authorization", "Bearer " + aiConfig.getApiKey())
+                    .url(requestUrl)
+                    .addHeader("api-key", aiConfig.getApiKey())
                     .addHeader("Content-Type", "application/json")
                     .post(RequestBody.create(json, MediaType.parse("application/json")))
                     .build();
 
+            log.info("发送HTTP请求...");
+            long startTime = System.currentTimeMillis();
+            
             try (Response response = httpClient.newCall(request).execute()) {
+                long endTime = System.currentTimeMillis();
+                log.info("收到HTTP响应，耗时: {}ms", endTime - startTime);
+                log.info("响应状态码: {}", response.code());
                 if (!response.isSuccessful()) {
                     String errorBody = response.body() != null ? response.body().string() : "unknown";
-                    log.error("MiMo API调用失败: {} - {}", response.code(), errorBody);
-                    throw new RuntimeException("AI API调用失败: " + response.code());
+                    log.error("小米MiMo API调用失败: {} - {}", response.code(), errorBody);
+                    
+                    // 根据状态码提供友好的错误信息
+                    String errorMessage;
+                    switch (response.code()) {
+                        case 401:
+                            errorMessage = "AI服务认证失败，请检查API密钥配置";
+                            break;
+                        case 403:
+                            errorMessage = "AI服务访问被拒绝，请检查API密钥权限";
+                            break;
+                        case 429:
+                            errorMessage = "AI服务请求过于频繁，请稍后再试";
+                            break;
+                        case 500:
+                        case 502:
+                        case 503:
+                            errorMessage = "AI服务暂时不可用，请稍后再试";
+                            break;
+                        default:
+                            errorMessage = "AI服务调用失败，错误码: " + response.code();
+                    }
+                    throw new RuntimeException(errorMessage);
                 }
                 
                 String responseBody = response.body().string();
-                log.info("MiMo API响应成功");
+                log.info("小米MiMo API响应成功");
+                log.info("API原始响应: {}", responseBody);  // 添加日志
                 
                 // 解析响应获取内容
                 Map<String, Object> result = gson.fromJson(responseBody, 
                         new TypeToken<Map<String, Object>>(){}.getType());
                 List<Map<String, Object>> choices = (List<Map<String, Object>>) result.get("choices");
+                if (choices == null || choices.isEmpty()) {
+                    log.error("响应中没有choices字段，原始响应: {}", responseBody);
+                    throw new RuntimeException("AI服务返回的数据格式异常");
+                }
                 Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
-                return (String) message.get("content");
+                if (message == null) {
+                    log.error("响应中没有message字段，choices: {}", choices);
+                    throw new RuntimeException("AI服务返回的消息内容为空");
+                }
+                String content = (String) message.get("content");
+                log.info("AI返回内容: {}", content);  // 添加日志
+                return content;
             }
+        } catch (java.net.ConnectException e) {
+            log.error("=== 网络连接被拒绝 ===");
+            log.error("异常类型: {}", e.getClass().getName());
+            log.error("异常信息: {}", e.getMessage());
+            throw new RuntimeException("网络连接失败，请检查网络配置或稍后再试");
+        } catch (java.net.SocketTimeoutException e) {
+            log.error("=== 网络连接超时 ===");
+            log.error("异常类型: {}", e.getClass().getName());
+            log.error("异常信息: {}", e.getMessage());
+            throw new RuntimeException("网络连接超时，请稍后再试");
+        } catch (java.net.UnknownHostException e) {
+            log.error("=== DNS解析失败 ===");
+            log.error("异常类型: {}", e.getClass().getName());
+            log.error("异常信息: {}", e.getMessage());
+            throw new RuntimeException("网络连接失败，请检查网络配置");
+        } catch (javax.net.ssl.SSLException e) {
+            log.error("=== SSL/TLS握手失败 ===");
+            log.error("异常类型: {}", e.getClass().getName());
+            log.error("异常信息: {}", e.getMessage());
+            throw new RuntimeException("网络安全连接失败，请检查网络配置");
         } catch (Exception e) {
-            log.error("调用MiMo API失败", e);
+            log.error("=== 调用小米MiMo API失败 ===");
+            log.error("异常类型: {}", e.getClass().getName());
+            log.error("异常信息: {}", e.getMessage());
+            log.error("异常堆栈:", e);
+            // 如果已经是RuntimeException，直接抛出
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            }
             throw new RuntimeException("AI服务调用失败: " + e.getMessage());
         }
     }
@@ -299,6 +373,8 @@ public class AIServiceImpl implements AIService {
         try {
             // 提取JSON部分
             String json = extractJson(response);
+            // 修复JSON中的特殊字符
+            json = fixJson(json);
             Map<String, Object> result = gson.fromJson(json, 
                     new TypeToken<Map<String, Object>>(){}.getType());
             
@@ -325,35 +401,101 @@ public class AIServiceImpl implements AIService {
     }
 
     /**
-     * 解析出题响应
+     * 解析出题响应 - 使用逐题提取方式，避免整体JSON解析失败
      */
     private List<AIGenerateQuestionResponse> parseGenerateResponse(String response, Integer type) {
         try {
             String json = extractJson(response);
-            Map<String, Object> result = gson.fromJson(json, 
-                    new TypeToken<Map<String, Object>>(){}.getType());
-            List<Map<String, Object>> questions = (List<Map<String, Object>>) result.get("questions");
+            json = fixJson(json);
             
-            return questions.stream().map(q -> {
-                AIGenerateQuestionResponse question = new AIGenerateQuestionResponse();
-                question.setContent((String) q.get("content"));
-                
-                // 处理选项列表
-                Object optionsObj = q.get("options");
-                if (optionsObj instanceof List) {
-                    question.setOptions((List<String>) optionsObj);
-                } else {
-                    question.setOptions(new ArrayList<>());
+            // 使用正则逐题提取，避免整体JSON解析失败
+            List<AIGenerateQuestionResponse> questions = new ArrayList<>();
+            
+            // 使用正则匹配每个题目的各个字段
+            java.util.regex.Pattern contentPattern = java.util.regex.Pattern.compile("\"content\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"");
+            java.util.regex.Pattern answerPattern = java.util.regex.Pattern.compile("\"answer\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"");
+            java.util.regex.Pattern analysisPattern = java.util.regex.Pattern.compile("\"analysis\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"");
+            
+            // 先尝试整体解析
+            try {
+                com.google.gson.stream.JsonReader reader = new com.google.gson.stream.JsonReader(new java.io.StringReader(json));
+                reader.setLenient(true);
+                Map<String, Object> result = gson.fromJson(reader, new TypeToken<Map<String, Object>>(){}.getType());
+                List<Map<String, Object>> qList = (List<Map<String, Object>>) result.get("questions");
+                if (qList != null) {
+                    for (Map<String, Object> q : qList) {
+                        AIGenerateQuestionResponse question = new AIGenerateQuestionResponse();
+                        question.setContent((String) q.get("content"));
+                        Object optionsObj = q.get("options");
+                        if (optionsObj instanceof List) {
+                            question.setOptions((List<String>) optionsObj);
+                        } else {
+                            question.setOptions(new ArrayList<>());
+                        }
+                        question.setAnswer((String) q.get("answer"));
+                        question.setAnalysis((String) q.get("analysis"));
+                        question.setType(type);
+                        questions.add(question);
+                    }
+                    if (!questions.isEmpty()) {
+                        return questions;
+                    }
                 }
-                
-                question.setAnswer((String) q.get("answer"));
-                question.setAnalysis((String) q.get("analysis"));
-                question.setType(type);
-                return question;
-            }).collect(Collectors.toList());
+            } catch (Exception e) {
+                log.warn("整体JSON解析失败，尝试逐题提取: {}", e.getMessage());
+            }
+            
+            // 整体解析失败，用正则逐题提取
+            String[] blocks = json.split("\"content\"\\s*:");
+            for (int i = 1; i < blocks.length; i++) {
+                String block = blocks[i];
+                try {
+                    AIGenerateQuestionResponse question = new AIGenerateQuestionResponse();
+                    
+                    // 提取content
+                    java.util.regex.Matcher cm = java.util.regex.Pattern.compile("^\\s*\"((?:[^\"\\\\]|\\\\.)*)\"").matcher(block);
+                    question.setContent(cm.find() ? cm.group(1) : "");
+                    
+                    // 提取options
+                    List<String> options = new ArrayList<>();
+                    int optStart = block.indexOf("[");
+                    int optEnd = block.indexOf("]");
+                    if (optStart >= 0 && optEnd > optStart) {
+                        String optStr = block.substring(optStart + 1, optEnd);
+                        java.util.regex.Matcher optMatcher = java.util.regex.Pattern.compile("\"((?:[^\"\\\\]|\\\\.)*)\"").matcher(optStr);
+                        while (optMatcher.find()) {
+                            options.add(optMatcher.group(1));
+                        }
+                    }
+                    question.setOptions(options);
+                    
+                    // 提取answer
+                    java.util.regex.Matcher am = answerPattern.matcher(block);
+                    question.setAnswer(am.find() ? am.group(1) : "");
+                    
+                    // 提取analysis - 取最后一个匹配，因为analysis可能很长
+                    java.util.regex.Matcher anam = analysisPattern.matcher(block);
+                    String analysis = "";
+                    while (anam.find()) {
+                        analysis = anam.group(1);
+                    }
+                    question.setAnalysis(analysis);
+                    
+                    question.setType(type);
+                    questions.add(question);
+                } catch (Exception e) {
+                    log.warn("解析第{}题失败: {}", i, e.getMessage());
+                }
+            }
+            
+            if (questions.isEmpty()) {
+                throw new RuntimeException("无法从AI响应中提取题目");
+            }
+            
+            return questions;
         } catch (Exception e) {
-            log.error("解析AI响应失败: {}", response, e);
-            throw new RuntimeException("AI响应解析失败");
+            log.error("解析出题响应失败", e);
+            throw new RuntimeException("AI响应解析失败: " + e.getMessage());
         }
     }
 
@@ -373,6 +515,21 @@ public class AIServiceImpl implements AIService {
             trimmed = trimmed.substring(0, trimmed.length() - 3);
         }
         return trimmed.trim();
+    }
+    
+    /**
+     * 修复JSON中的特殊字符问题
+     */
+    private String fixJson(String json) {
+        // 修复analysis字段中的未转义字符
+        // 将换行符替换为空格
+        json = json.replaceAll("\\n", " ");
+        json = json.replaceAll("\\r", "");
+        // 将制表符替换为空格
+        json = json.replaceAll("\\t", " ");
+        // 将多个空格合并为一个
+        json = json.replaceAll("\\s+", " ");
+        return json;
     }
     
     /**

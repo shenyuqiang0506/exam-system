@@ -195,10 +195,24 @@ public class UserManageController {
         String fileName = URLEncoder.encode("学生导入模板", StandardCharsets.UTF_8);
         response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
 
+        // 表头
+        List<List<String>> head = new ArrayList<>();
+        head.add(List.of("学号"));
+        head.add(List.of("真实姓名"));
+        head.add(List.of("班级"));
+        head.add(List.of("手机号"));
+        head.add(List.of("邮箱"));
+
+        // 示例数据
+        List<List<String>> data = new ArrayList<>();
+        data.add(List.of("2024001", "张三", "计算机2401班", "13800138001", "zhangsan@example.com"));
+        data.add(List.of("2024002", "李四", "计算机2401班", "13800138002", "lisi@example.com"));
+        data.add(List.of("2024003", "王五", "计算机2402班", "", ""));
+
         com.alibaba.excel.EasyExcel.write(response.getOutputStream())
-                .head(sysUserService.getImportTemplate())
+                .head(head)
                 .sheet("学生列表")
-                .doWrite(List.of());
+                .doWrite(data);
     }
 
     /**

@@ -11,6 +11,8 @@ import com.shen.examsystem.entity.AIGradeLog;
 import com.shen.examsystem.entity.QuestionBank;
 import com.shen.examsystem.interceptor.RequireRole;
 import com.shen.examsystem.service.AIService;
+import com.shen.examsystem.config.AIConfig;
+import com.shen.examsystem.util.NetworkDiagnostic;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -21,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * AI控制器 - DeepSeek
+ * AI控制器 - 小米MiMo
  */
 @RestController
 @RequestMapping("/api/ai")
@@ -30,6 +32,18 @@ public class AIController {
 
     @Autowired
     private AIService aiService;
+    
+    @Autowired
+    private AIConfig aiConfig;
+
+    /**
+     * 网络诊断 - 检查AI API连接状态
+     */
+    @GetMapping("/diagnose")
+    public Result<String> diagnose() {
+        String report = NetworkDiagnostic.diagnose(aiConfig.getBaseUrl());
+        return Result.success(report);
+    }
 
     /**
      * AI主观题判分
